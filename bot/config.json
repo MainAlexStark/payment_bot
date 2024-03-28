@@ -1,0 +1,31 @@
+{
+"TOKEN":"6633685626:AAG00mDufO3TrR04Rx57Od4n9LtTaXGFPdg",
+
+"channels_cost" : {"Energeia Charta":"10.00",
+            "Energeia Trading":"20.00"},
+
+"pay_wallet": "$",
+
+"subscription_duration" : "30",
+
+"days_notice": 2,
+
+"channels" : {"Energeia Charta":-1002066507370,
+            "Energeia Trading":-1002103257297},
+
+"admins": [684124197],
+        
+"commands": {
+
+    "user": {
+        "default": ["start","help"]
+    },
+
+    "admin": {
+        "channels": ["add_channel", "del_channel"]
+    }
+}
+
+}
+        
+
