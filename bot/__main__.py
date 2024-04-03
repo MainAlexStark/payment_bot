@@ -4,6 +4,7 @@ import datetime
 
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram import types 
 
 from tasks import check_end, check_paid
 from handlers.admin import channels
@@ -31,16 +32,16 @@ async def main():
 
     bot = Bot(config["bot"]["TOKEN"])
 
-    await bot.unban_chat_member(-1002066507370, 6525546927)
-    await bot.unban_chat_member(-1002103257297, 6525546927)
+    #await bot.unban_chat_member(-1002066507370, 6525546927)
+    #await bot.unban_chat_member(-1002103257297, 6525546927)
 
     user_channel_status = await bot.get_chat_member(chat_id=-1002066507370, user_id=6525546927)
 
     # Если пользователь подписан на канал
-    print(user_channel_status.status)
+    #print(user_channel_status.status)
 
-    user_channel_status = await bot.get_chat_member(-1002066507370, 6525546927)
-    print(user_channel_status.status)
+    #user_channel_status = await bot.get_chat_member(-1002066507370, 6525546927)
+    #print(user_channel_status.status)
 
     storage = MemoryStorage()
 

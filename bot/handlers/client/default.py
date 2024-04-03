@@ -52,12 +52,12 @@ async def cmd_start(message: Message, state: FSMContext):
         with open(config_path) as file:
             config = json.load(file)
 
-            # Initialize the API client
-            api = WalletPayAPI(api_key=config["WalletPay"]["TOKEN"])
+            # # Initialize the API client
+            # api = WalletPayAPI(api_key=config["WalletPay"]["TOKEN"])
 
-            print(orders.storage.keys())
-            for order_id in orders.storage.values():
-                print('order=',api.get_order_preview(order_id))
+            # print(orders.storage.keys())
+            # for order_id in orders.storage.values():
+            #     print('order=',api.get_order_preview(order_id))
 
             channels = []
 

@@ -30,7 +30,7 @@ async def check(bot):
         cursor.execute('SELECT id FROM users')
         values = cursor.fetchall()
 
-        print(f'users={values}')
+        print(f'number of users={len(values)}')
 
         now = datetime.now().strftime('%d.%m.%Y')
 
@@ -59,8 +59,8 @@ async def check(bot):
                     i += 1
 
                 # Отправляем сообщение пользователям
-                print(f"предупреждение о конец бесплатной версии {date + timedelta(days=config['payment']["trial_period"]) - timedelta(days=config["payment"]["days_notice"])}")
-                print(f"конец бесплатной версии {date + timedelta(days=config['payment']["trial_period"])}")
+                #print(f"предупреждение о конец бесплатной версии {date + timedelta(days=config['payment']["trial_period"]) - timedelta(days=config["payment"]["days_notice"])}")
+                #print(f"конец бесплатной версии {date + timedelta(days=config['payment']["trial_period"])}")
                 if datetime.strptime(now, '%d.%m.%Y') == date + timedelta(days=config['payment']["trial_period"]) - timedelta(days=config["payment"]["days_notice"]):
                     await bot.send_message(chat_id=user_id, text=message, reply_markup=free_trial.free_trial_end_keyboard)
 

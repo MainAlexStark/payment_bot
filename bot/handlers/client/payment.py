@@ -1,6 +1,6 @@
 from aiogram import Router
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, ContentType
 
 from aiogram.fsm.state import StatesGroup, State
 
@@ -97,4 +97,18 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
         with open(config_path) as file:
             config = json.load(file)
 
-            
+            await callback.bot.send_invoice(
+                            callback.from_user.id,
+                            title=callback_data,
+                            description=f"Activation of subscription to {callback_data}.\n{config['channels']['channels_description'][callback_data]}",
+                            provider_token=config['Stripe']['TOKEN'],
+                            currency="usd",
+                            photo_url="https://www.aroged.com/wp-content/uploads/2022/06/Telegram-has-a-premium-subscription.jpg",
+                            photo_width=416,
+                            photo_height=234,
+                            photo_size=416,
+                            is_flexible=False,
+                            prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]['subscription_duration'])} days',
+                                                        amount=int(float(config['channels']['channels_cost'][callback_data])*100))], # Цена в копейках
+                            start_parameter="one-month-subscription",
+                            payload="test-invoice-payload")

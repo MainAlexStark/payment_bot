@@ -8,10 +8,14 @@
     "TOKEN":"6poiu1j8u2y4LXNnsSYt6ut99lCHdh55VT9C"
 },
 
+"Stripe": {
+    "TOKEN": "284685063:TEST:YjUxMTBhODE1Nzkz"
+},
+
 "channels":{
     "channels_cost" : {
-        "Energeia Charta":"0.01",
-        "Energeia Trading":"0.01"
+        "Energeia Charta":"10",
+        "Energeia Trading":"10"
     },
     "channels_description": {
         "Energeia Charta": "Energeia Charta offers weekly analysis with Telegram alerts and exclusive Chartopedia access",
