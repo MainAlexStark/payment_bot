@@ -1,17 +1,40 @@
 {
-"TOKEN":"6633685626:AAG00mDufO3TrR04Rx57Od4n9LtTaXGFPdg",
+"bot": {
+    "TOKEN":"6633685626:AAG00mDufO3TrR04Rx57Od4n9LtTaXGFPdg",
+    "url":"https://t.me/Alex_Stark_bot"
+},
 
-"channels_cost" : {"Energeia Charta":"10.00",
-            "Energeia Trading":"20.00"},
+"WalletPay": {
+    "TOKEN":"6poiu1j8u2y4LXNnsSYt6ut99lCHdh55VT9C"
+},
 
-"pay_wallet": "$",
+"channels":{
+    "channels_cost" : {
+        "Energeia Charta":"0.01",
+        "Energeia Trading":"0.01"
+    },
+    "channels_description": {
+        "Energeia Charta": "Energeia Charta offers weekly analysis with Telegram alerts and exclusive Chartopedia access",
+        "Energeia Trading": "Energeia Trading provides live streaming insights into our trades"
+    },
+    "channels_id" : {
+        "Energeia Charta":-1002066507370,
+        "Energeia Trading":-1002103257297
+    }
+},
 
-"subscription_duration" : "30",
 
-"days_notice": 2,
+"payment":{
+    "pay_wallet": "$",
 
-"channels" : {"Energeia Charta":-1002066507370,
-            "Energeia Trading":-1002103257297},
+    "pay_wallet_str": "USD",
+
+    "trial_period": 14,
+
+    "subscription_duration" : 30,
+
+    "days_notice": 1
+},
 
 "admins": [684124197],
         

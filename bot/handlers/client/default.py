@@ -16,6 +16,11 @@ from strings import en
 
 import json
 
+from payments.orders import orders
+import time
+
+from WalletPay import WalletPayAPI
+
 router = Router()
 
 db_client = UserDataBase('DB/users.db')
@@ -31,10 +36,6 @@ async def cmd_start(message: Message, state: FSMContext):
         # Формируем путь к файлу config.json
         config_path = os.path.join(os.path.dirname(current_path), '../../config.json')
 
-        # Открываем JSON файл
-        with open(config_path) as file:
-            config = json.load(file)
-
         user_name = message.from_user.first_name
         user_id = message.from_user.id
 
@@ -48,34 +49,36 @@ async def cmd_start(message: Message, state: FSMContext):
 
         buttons = []
 
-        # # Проверяем подписку на каналы
-        # for channel_name, channel_id in config.channels.items():
-        #     user_channel_status = await message.bot.get_chat_member(chat_id=channel_id, user_id=message.from_user.id)
+        with open(config_path) as file:
+            config = json.load(file)
 
-        #     if user_channel_status.status != 'left':
-        #         # Подписан
-        #         sub_channel[channel_name] = True
-        #     else:
-        #         # Если не подписан, то добавляем этот канал в массив кнопок и в строку
-        #         sub_channel[channel_name] = False
-        #         sub_channel_flag = False
+            # Initialize the API client
+            api = WalletPayAPI(api_key=config["WalletPay"]["TOKEN"])
 
-        #         not_sub_channel_str += channel_name + ' ' + str(config.channels[channel_name]) + '\n'
+            print(orders.storage.keys())
+            for order_id in orders.storage.values():
+                print('order=',api.get_order_preview(order_id))
 
-        #         buttons.append(types.InlineKeyboardButton(text=channel_name, url=str(config.channels[channel_name])))
+            channels = []
 
-        # # Создаем клавиатуру с каналами, на которые нет подписки
-        # tgc_keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+            # Создаем кнопки с каналами
+            for channel_name, channel_cost in config["channels"]["channels_cost"].items():
+                user_channel_status = await message.bot.get_chat_member(chat_id=config['channels']['channels_id'][channel_name], user_id=message.from_user.id)
+                if user_channel_status.status != 'left': 
+                    continue
+
+                sub_channel_flag = False
+                channels.append([types.InlineKeyboardButton(text=f"{channel_name} - {config["payment"]["pay_wallet"]}{channel_cost} for {config["payment"]["subscription_duration"]} days",\
+                                                        callback_data=f"pay={channel_name}")])
+            
+            channels_without_subscription = types.InlineKeyboardMarkup(inline_keyboard=channels)
 
         if is_user:
-            buttons = [[types.InlineKeyboardButton(text="Test", callback_data='test')],]
-            keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
-
             if sub_channel_flag:
                 # Если пользователь подписан на все каналы то выводим соответсвующее сообщение
-                await message.answer(text=f"You are already subscribed to all channels",reply_markup=keyboard)
+                await message.answer(text=f"You are already subscribed to all channels")
             else:
-                await message.answer(text="Еще не доделано")
+                await message.answer(text="You can also subscribe to:", reply_markup=channels_without_subscription)
         else:
             # Добавляем пользователя в db
             db_client.add_user(user_id)
@@ -83,7 +86,7 @@ async def cmd_start(message: Message, state: FSMContext):
             buttons = []
 
             # Создаем пригласительные ссылки
-            for channel_name, channel_id in config["channels"].items():
+            for channel_name, channel_id in config["channels"]["channels_id"].items():
 
                 link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
 
@@ -139,7 +142,7 @@ async def cmd_help(message: Message):
         
             await message.answer(string)
         else:
-            string = en.strings["start_message_admin"]
+            string = en.strings["help_message"]
 
             for dict in config['commands']['user'].values():
                 for command in dict:

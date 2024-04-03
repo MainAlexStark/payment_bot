@@ -1,0 +1,12 @@
+renew_subscription={channel_name}
+
+show_subscription_options
+
+
+
+text:
+
+start
+help
+add_channel
+

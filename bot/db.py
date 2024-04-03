@@ -74,16 +74,16 @@ class UserDataBase():
             cur = conn.cursor()
 
             # Создаем таблицу, если она еще не существует
-            cur.execute('''CREATE TABLE IF NOT EXISTS users (
-                            id INTEGER PRIMARY KEY,
-                            free_trial BOOLEAN,
-                            paid BOOLEAN,
-                            start_free_trial TEXT
-                        )''')
+            # cur.execute('''CREATE TABLE IF NOT EXISTS users (
+            #                 id INTEGER PRIMARY KEY,
+            #                 free_trial BOOLEAN,
+            #                 paid BOOLEAN,
+            #                 start_free_trial TEXT
+            #             )''')
 
             # Добавляем информацию в таблицу
-            cur.execute(f"INSERT INTO users (id, free_trial, paid, start_free_trial) \
-                         VALUES ({id}, {True}, {False},  '{current_date}')")
+            cur.execute(f"INSERT INTO users (id, free_trial , start_free_trial) \
+                         VALUES ({id}, {True},'{current_date}')")
             conn.commit()
 
             # Закрываем подключение
@@ -107,6 +107,27 @@ class UserDataBase():
         conn.commit()
 
         conn.close()
+
+
+    def get_column(self, id: int, column: str):
+        try:
+            # Устанавливаем соединение с базой данных
+            connection = self.connect()
+            cursor = connection.cursor()
+
+            cursor.execute(f"SELECT {column} FROM users WHERE id = ?", (id,))
+            result = cursor.fetchone()
+
+            value = result[0]
+
+            # Закрываем соединение с базой данных
+            cursor.close()
+            connection.close()
+
+            return value
+
+        except Exception as e:
+            print(f'Ошибка при получении значения столбца:{e}')
     
 
     def get_data(self, id: int):
