@@ -14,16 +14,25 @@
 
 "channels":{
     "channels_cost" : {
-        "Energeia Charta":"10",
-        "Energeia Trading":"10"
+        "paid_test_channel_1":"10",
+        "paid_test_channel_2":"10"
     },
     "channels_description": {
-        "Energeia Charta": "Energeia Charta offers weekly analysis with Telegram alerts and exclusive Chartopedia access",
-        "Energeia Trading": "Energeia Trading provides live streaming insights into our trades"
+        "paid_test_channel_1": "paid_test_channel1 description",
+        "paid_test_channel_2": "paid_test_channel2 description"
     },
     "channels_id" : {
-        "Energeia Charta":-1002066507370,
-        "Energeia Trading":-1002103257297
+        "paid_test_channel_1":-1002121864646,
+        "paid_test_channel_2":-1002115165052
+    }
+},
+
+"free_channels":{
+    "channels_description": {
+        "free_test_channel_1": "free_test_channel_1 description"
+    },
+    "channels_url" : {
+        "free_test_channel_1": "https://t.me/free_test_channel"
     }
 },
 

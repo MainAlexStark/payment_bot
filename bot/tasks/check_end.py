@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 from strings.en import strings
-from keyboards.tasks import free_trial
 from db import UserDataBase
 
 from aiogram import types
@@ -42,7 +41,30 @@ async def check(bot):
             # получаем данные о пользователе
             user_data = db.get_data(user_id)
 
-            print(f'user_id={user_id}')
+            
+    ##################### Изменить на поиск подписки по базе данных
+            # Получаем словарь каналов на которые у пользователя нет подписки
+            not_sub_channels = {}
+            for channel_name, channel_id in config['channels']['channels_id'].items():
+                user_channel_status = await bot.get_chat_member(chat_id=channel_id, user_id=user_id)
+                if user_channel_status.status != 'left': 
+                    continue
+                not_sub_channels[channel_name] = channel_id
+
+
+            # Открываем JSON файл
+            with open(config_path) as file:
+                config = json.load(file)
+
+                channels = []
+
+                # Создаем кнопки с каналами
+                for channel_name, channel_id in not_sub_channels.items():
+                    channels.append([types.InlineKeyboardButton(text=f"{channel_name} - {config["payment"]["pay_wallet"]}{config['channels']['channels_cost'][channel_name]} for {config["payment"]["subscription_duration"]} days",\
+                                                            callback_data=f"pay={channel_name}")])
+                
+                free_trial_end_keyboard = types.InlineKeyboardMarkup(inline_keyboard=channels)
+
 
             # Узнаем, идет ли пробный период
             if user_data[1] == 1:
@@ -62,7 +84,7 @@ async def check(bot):
                 #print(f"предупреждение о конец бесплатной версии {date + timedelta(days=config['payment']["trial_period"]) - timedelta(days=config["payment"]["days_notice"])}")
                 #print(f"конец бесплатной версии {date + timedelta(days=config['payment']["trial_period"])}")
                 if datetime.strptime(now, '%d.%m.%Y') == date + timedelta(days=config['payment']["trial_period"]) - timedelta(days=config["payment"]["days_notice"]):
-                    await bot.send_message(chat_id=user_id, text=message, reply_markup=free_trial.free_trial_end_keyboard)
+                    await bot.send_message(chat_id=user_id, text=message, reply_markup=free_trial_end_keyboard)
 
                 message = strings['end_free_trial']
                 # Баним пользователей
@@ -77,11 +99,10 @@ async def check(bot):
 
                         db.change_data(user_id, "free_trial", False)
 
-                    await bot.send_message(chat_id=user_id,text=message,reply_markup=free_trial.free_trial_end_keyboard)
+                    await bot.send_message(chat_id=user_id,text=message,reply_markup=free_trial_end_keyboard)
 
             # Проверяем, идет ли подписка на определенные каналы        
             for channel_name, channel_id in config["channels"]["channels_id"].items():
-                user_channel_status = await bot.get_chat_member(chat_id=channel_id, user_id=user_id)
 
                 channel_column = channel_name.replace(' ','_')
 
@@ -95,6 +116,7 @@ async def check(bot):
                 ]
                 keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
+                # Если пользователь имеет подписку
                 if date_channel is not None:
                     # Получаем дату и приводим к нужному формату
                     date_str = date_channel

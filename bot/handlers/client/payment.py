@@ -7,7 +7,7 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram import types, F, Bot
 
 
-import os,json, requests
+import os,json, requests, datetime
 
 from db import UserDataBase
 from payments.ton import TON
@@ -20,6 +20,55 @@ from WalletPay import WalletPayAPI
 router = Router()
 
 db_client = UserDataBase('DB/users.db')
+
+@router.pre_checkout_query(lambda query: True)
+async def pre_checkout_query(pre_checkout_q: types.PreCheckoutQuery) -> None:
+    await pre_checkout_q.answer(ok=True)
+
+
+@router.message(F.content_type == ContentType.SUCCESSFUL_PAYMENT)
+async def successful_payment(message: types.Message) -> None:
+
+    # Получаем путь к текущему файлу temp.py
+    current_path = os.path.abspath(__file__)
+
+    # Формируем путь к файлу config.json
+    config_path = os.path.join(os.path.dirname(current_path), '../../config.json')
+
+    user_id = message.from_user.id
+
+    channel_id = int(message.successful_payment.invoice_payload)
+    channel_name = ''
+
+    # Открываем JSON файл
+    with open(config_path) as file:
+        config = json.load(file)
+
+        for key, value in config['channels']['channels_id'].items():
+            if value == channel_id:
+                channel_name = key
+
+    buttons = []
+
+    link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
+
+    # Добавляем ссылки в клавиатуру
+    buttons.append([types.InlineKeyboardButton(text=f'{channel_name}', url=link.invite_link)])
+
+    # Создаем клавиатуру с каналами, на которые нет подписки
+    start_keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+
+    # Разбан пользователя
+    await message.bot.unban_chat_member(channel_id, user_id)
+
+    # Вводим изменения в базу данных
+    # Получаем текущую дату
+    current_date = datetime.datetime.now().strftime("%d.%m.%Y")
+
+    db_client.change_data(user_id, channel_name, current_date)
+
+    await message.answer(f"Payment for the {channel_name} channel was successful!\nYour subscription will be valid for {config["payment"]['subscription_duration']} days"
+                         , reply_markup=start_keyboard)
 
 @router.callback_query()
 async def general_start(callback: CallbackQuery, state: FSMContext):
@@ -112,13 +161,4 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                             prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]['subscription_duration'])} days',
                                                         amount=int(float(config['channels']['channels_cost'][callback_data])*100))], # Цена в копейках
                             start_parameter="one-month-subscription",
-                            payload="test-invoice-payload")
-
-@router.pre_checkout_query()
-async def pre_checkout_query(pre_checkout_query: types.PreCheckoutQuery, bot: Bot):
-    await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
-
-
-@router.message(F.content_types == ContentType.SUCCESSFUL_PAYMENT)
-async def successful_payment(message: Message):
-    await message.answer('Оплата прошла успешно!')
+                            payload=str(config['channels']['channels_id'][callback_data]))

@@ -4,9 +4,10 @@ db =  db.UserDataBase('DB/users.db')
 
 # 684124197
 #6525546927
-#db.change_data(5221675666,'start_free_trial' , '20.03.2024')
+db.change_data(684124197,'free_trial' , False)
 #db.change_data(6525546927,'start_free_trial' , '20.03.2024')
-db.del_user(6525546927)
+#db.del_user(6525546927)
+#db.add_column('paid_test_channel_2', 'TEXT')
 db.print()
 
 
