@@ -4,7 +4,8 @@ from aiogram.types import Message, CallbackQuery, ContentType
 
 from aiogram.fsm.state import StatesGroup, State
 
-from aiogram import types
+from aiogram import types, F, Bot
+
 
 import os,json, requests
 
@@ -112,3 +113,12 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                                                         amount=int(float(config['channels']['channels_cost'][callback_data])*100))], # Цена в копейках
                             start_parameter="one-month-subscription",
                             payload="test-invoice-payload")
+
+@router.pre_checkout_query()
+async def pre_checkout_query(pre_checkout_query: types.PreCheckoutQuery, bot: Bot):
+    await bot.answer_pre_checkout_query(pre_checkout_query.id, ok=True)
+
+
+@router.message(F.content_types == ContentType.SUCCESSFUL_PAYMENT)
+async def successful_payment(message: Message):
+    await message.answer('Оплата прошла успешно!')

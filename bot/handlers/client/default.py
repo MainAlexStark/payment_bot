@@ -90,15 +90,13 @@ async def cmd_start(message: Message, state: FSMContext):
 
                 link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
 
-                print(f'link={link.invite_link}\t{type(link.invite_link)}')
-
                 # Добавляем ссылки в клавиатуру
                 buttons.append(types.InlineKeyboardButton(text=channel_name, url=link.invite_link))
 
             # Создаем клавиатуру с каналами, на которые нет подписки
             start_keyboard = types.InlineKeyboardMarkup(inline_keyboard=[buttons,])
 
-            await message.answer(text=strings['start_message'],reply_markup=start_keyboard)
+            await message.answer(text=strings['start_message'],reply_markup=start_keyboard,parse_mode="HTML", disable_web_page_preview=True)
 
 
 
