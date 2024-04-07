@@ -70,12 +70,17 @@ async def cmd_start(message: Message, state: FSMContext):
             # Создаем кнопки с каналами
             for channel_name, channel_cost in config["channels"]["channels_cost"].items():
                 user_channel_status = await message.bot.get_chat_member(chat_id=config['channels']['channels_id'][channel_name], user_id=message.from_user.id)
-                if user_channel_status.status != 'left': 
+                if user_channel_status.status != 'left' and user_channel_status.status != 'kicked': 
                     continue
 
                 sub_channel_flag = False
                 channels.append([types.InlineKeyboardButton(text=f"{channel_name} - {config["payment"]["pay_wallet"]}{channel_cost} for {config["payment"]["subscription_duration"]} days",\
                                                         callback_data=f"pay={channel_name}")])
+                
+            all_cost = 0
+            for channel_cost in config["channels"]["channels_cost"].values(): all_cost += int(channel_cost)
+            channels.append([types.InlineKeyboardButton(text=f"All channels - {config["payment"]["pay_wallet"]}{all_cost} for {config["payment"]["subscription_duration"]} days",\
+                                                        callback_data=f"pay=all")])
             
             channels_without_subscription = types.InlineKeyboardMarkup(inline_keyboard=channels)
 
@@ -109,7 +114,15 @@ async def cmd_start(message: Message, state: FSMContext):
             # Создаем клавиатуру с каналами, на которые нет подписки
             start_keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
+            buttons = []
+
+            buttons.append([types.KeyboardButton(text='/products')])
+            buttons.append([types.KeyboardButton(text='/status')])
+
+            greet_kb = types.ReplyKeyboardMarkup(keyboard=buttons,resize_keyboard=True)
+
             await message.answer(text=strings['start_message'],reply_markup=start_keyboard,parse_mode="HTML", disable_web_page_preview=True)
+            await message.answer(text=strings['Terms_of_Service'],reply_markup=greet_kb,parse_mode="HTML", disable_web_page_preview=True)
 
 
 
@@ -124,6 +137,60 @@ async def cmd_start(message: Message, state: FSMContext):
             await message.answer(string)
 
 
+@router.message(Command("products"))
+async def cmd_products(message: Message):
+
+    if message.chat.type == "private":
+
+        user_id = message.from_user.id
+
+        # Получаем путь к текущему файлу temp.py
+        current_path = os.path.abspath(__file__)
+
+        # Формируем путь к файлу config.json
+        config_path = os.path.join(os.path.dirname(current_path), '../../config.json')
+
+        msg = 'A detailed technical review of key energy markets delivered through Telegram private channels with links to websites for extensive description, educational resources and full historic archives of our analysis'
+
+        # Открываем JSON файл
+        with open(config_path) as file:
+            config = json.load(file)
+
+            buttons = []
+
+            # получаем данные о пользователе
+            user_data = db_client.get_data(user_id)
+            # Получаем дату и приводим к нужному формату
+            date_str = user_data[2]
+            date = datetime.strptime(date_str, '%d.%m.%Y')
+
+            for channel_name, channel_url in config['free_channels']['channels_url'].items():
+                buttons.append([types.InlineKeyboardButton(text=f'Free channel / {channel_name}',\
+                                                  url=channel_url)])
+
+            for channel_name, channel_id in config['channels']['channels_id'].items():
+                is_sub = db_client.get_column(user_id, channel_name)
+                user_channel_status = await message.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
+                free_trial = False
+                if db_client.get_data(user_id)[1]  == 1: free_trial = True
+                # Если пользователь подписан на канал получаем сколько ему осталось до конца подписки или пробного периода
+                if free_trial:
+                    end_free_trial = (date + timedelta(days=config['payment']["trial_period"])).strftime('%d-%m-%Y')
+                    link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
+                    buttons.append([types.InlineKeyboardButton(text=f'Go to{channel_name} - Free trial ends in {end_free_trial}',\
+                                                url=link.invite_link)])
+                elif db_client.get_column(user_id, channel_name) is not None:
+                    end_sub = (date + timedelta(days=config['payment']["subscription_duration"])).strftime('%d-%m-%Y')
+                    link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
+                    buttons.append([types.InlineKeyboardButton(text=f'Go to {channel_name} - Subscription ends in {end_sub}',\
+                                                url=link.invite_link)])
+                elif db_client.get_column(user_id, channel_name) is None:
+                    buttons.append([types.InlineKeyboardButton(text=f'{channel_name} - {config["payment"]["pay_wallet"]}{config['channels']['channels_cost'][channel_name]} for {config["payment"]["subscription_duration"]} days',\
+                                                callback_data=f'pay={channel_name}')])
+    
+            keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+
+            await message.answer(text=msg, reply_markup=keyboard)
 
 
 @router.message(Command("help"))
@@ -191,22 +258,27 @@ async def cmd_status(message: Message):
 
             buttons = []
 
+            for channel_name, channel_url in config['free_channels']['channels_url'].items():
+                buttons.append([types.InlineKeyboardButton(text=f'Free channel / {channel_name}',\
+                                                  url=channel_url)])
+
             for channel_name, channel_id in config['channels']['channels_id'].items():
+                is_sub = db_client.get_column(user_id, channel_name)
                 user_channel_status = await message.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
                 free_trial = False
                 if db_client.get_data(user_id)[1]  == 1: free_trial = True
                 # Если пользователь подписан на канал получаем сколько ему осталось до конца подписки или пробного периода
-                if user_channel_status.status != 'left': 
-                    if free_trial:
-                        end_free_trial = (date + timedelta(days=config['payment']["trial_period"])).strftime('%d-%m-%Y')
-                        link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
-                        buttons.append([types.InlineKeyboardButton(text=f'{channel_name} - Free trial ends in {end_free_trial} days',\
-                                                  url=link.invite_link)])
-                    else:
-                        end_sub = (date + timedelta(days=config['payment']["subscription_duration"])).strftime('%d-%m-%Y')
-                        link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
-                        buttons.append([types.InlineKeyboardButton(text=f'{channel_name} - Subscription ends in  {end_sub} days',\
-                                                  url=link.invite_link)])
+
+                if free_trial:
+                    end_free_trial = (date + timedelta(days=config['payment']["trial_period"])).strftime('%d-%m-%Y')
+                    link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
+                    buttons.append([types.InlineKeyboardButton(text=f'Go to{channel_name} - Free trial ends in {end_free_trial}',\
+                                                url=link.invite_link)])
+                elif db_client.get_column(user_id, channel_name) is not None:
+                    end_sub = (date + timedelta(days=config['payment']["subscription_duration"])).strftime('%d-%m-%Y')
+                    link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
+                    buttons.append([types.InlineKeyboardButton(text=f'Go to {channel_name} - Subscription ends in {end_sub}',\
+                                                url=link.invite_link)])
     
             keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 

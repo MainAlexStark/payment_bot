@@ -1,15 +1,30 @@
-import db
+import db, json
+from datetime import datetime, timedelta
 
-db =  db.UserDataBase('DB/users.db')
+db_client =  db.UserDataBase('DB/users.db')
 
 # 684124197
 #6525546927
-db.change_data(684124197,'free_trial' , False)
-#db.change_data(6525546927,'start_free_trial' , '20.03.2024')
-#db.del_user(6525546927)
+#db_client.change_data(6525546927,'free_trial' , 1)
+db_client.change_data(6525546927,'start_free_trial' , '22.03.2024')
+#db_client.del_user(6525546927)
 #db.add_column('paid_test_channel_2', 'TEXT')
-db.print()
+db_client.print()
 
+# получаем данные о пользователе
+user_data = db_client.get_data(6525546927)
+
+# Открываем JSON файл
+with open('config.json') as file:
+    config = json.load(file)
+    
+    # Получаем дату и приводим к нужному формату
+    date_str = user_data[2]
+    date = datetime.strptime(date_str, '%d.%m.%Y')
+    now = datetime.now().strftime('%d.%m.%Y')
+
+    end_data = date - timedelta(days=config['payment']["trial_period"]) + timedelta(days=config['payment']["days_notice"])
+    print(end_data)
 
 # import requests
 

@@ -32,13 +32,16 @@ async def main():
 
     bot = Bot(config["bot"]["TOKEN"])
 
-    #await bot.unban_chat_member(-1002066507370, 6525546927)
-    #await bot.unban_chat_member(-1002103257297, 6525546927)
+    # await bot.unban_chat_member(-1002121864646, 6525546927)
+    # await bot.unban_chat_member(-1002115165052, 6525546927)
 
-    user_channel_status = await bot.get_chat_member(chat_id=-1002066507370, user_id=6525546927)
+    user_channel_status = await bot.get_chat_member(chat_id=-1002121864646, user_id=6525546927)
+    print(user_channel_status.status)
+    user_channel_status = await bot.get_chat_member(chat_id=-1002115165052, user_id=6525546927)
+    print(user_channel_status.status)
 
     # Если пользователь подписан на канал
-    #print(user_channel_status.status)
+    
 
     #user_channel_status = await bot.get_chat_member(-1002066507370, 6525546927)
     #print(user_channel_status.status)
@@ -54,7 +57,7 @@ async def main():
     dp.include_router(payment.router)
 
     # Set bot commands in the UI
-    #await set_bot_commands(bot)
+    await set_bot_commands(bot)
 
     # Отправьте асинхронную задачу для постоянной проверки окончания подписки или пробного периода на какой либо канал
     asyncio.create_task(scheduled(bot, 86400))  # 86400 секунд - это 24 часа

@@ -6,8 +6,10 @@ from aiogram.fsm.state import StatesGroup, State
 
 from aiogram import types, F, Bot
 
+from datetime import datetime, timedelta
 
-import os,json, requests, datetime
+
+import os,json, requests
 
 from db import UserDataBase
 from payments.ton import TON
@@ -37,38 +39,66 @@ async def successful_payment(message: types.Message) -> None:
 
     user_id = message.from_user.id
 
-    channel_id = int(message.successful_payment.invoice_payload)
-    channel_name = ''
+    if message.successful_payment.invoice_payload == 'all':
+        # Открываем JSON файл
+        with open(config_path) as file:
+            config = json.load(file)
+            buttons = []
+            # Получаем текущую дату
+            current_date = datetime.now().strftime("%d.%m.%Y")
+            for channel_name, channel_id in config['channels']['channels_id'].items():
 
-    # Открываем JSON файл
-    with open(config_path) as file:
-        config = json.load(file)
+                # Разбан пользователя
+                await message.bot.unban_chat_member(channel_id, user_id)
 
-        for key, value in config['channels']['channels_id'].items():
-            if value == channel_id:
-                channel_name = key
+                # Вводим изменения в базу данных
+                db_client.change_data(user_id, channel_name, current_date)
+                
+                link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
 
-    buttons = []
+                # Добавляем ссылки в клавиатуру
+                buttons.append([types.InlineKeyboardButton(text=f'{channel_name}', url=link.invite_link)])
 
-    link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
+            # Создаем клавиатуру с каналами, на которые нет подписки
+            start_keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
-    # Добавляем ссылки в клавиатуру
-    buttons.append([types.InlineKeyboardButton(text=f'{channel_name}', url=link.invite_link)])
+            await message.answer(f"Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]['subscription_duration']} days"
+                            , reply_markup=start_keyboard)
+            
+    else:
 
-    # Создаем клавиатуру с каналами, на которые нет подписки
-    start_keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+        channel_id = int(message.successful_payment.invoice_payload)
+        channel_name = ''
 
-    # Разбан пользователя
-    await message.bot.unban_chat_member(channel_id, user_id)
+        # Открываем JSON файл
+        with open(config_path) as file:
+            config = json.load(file)
 
-    # Вводим изменения в базу данных
-    # Получаем текущую дату
-    current_date = datetime.datetime.now().strftime("%d.%m.%Y")
+            for key, value in config['channels']['channels_id'].items():
+                if value == channel_id:
+                    channel_name = key
 
-    db_client.change_data(user_id, channel_name, current_date)
+        buttons = []
 
-    await message.answer(f"Payment for the {channel_name} channel was successful!\nYour subscription will be valid for {config["payment"]['subscription_duration']} days"
-                         , reply_markup=start_keyboard)
+        link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
+
+        # Добавляем ссылки в клавиатуру
+        buttons.append([types.InlineKeyboardButton(text=f'{channel_name}', url=link.invite_link)])
+
+        # Создаем клавиатуру с каналами, на которые нет подписки
+        start_keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+
+        # Разбан пользователя
+        await message.bot.unban_chat_member(channel_id, user_id)
+
+        # Вводим изменения в базу данных
+        # Получаем текущую дату
+        current_date = datetime.now().strftime("%d.%m.%Y")
+
+        db_client.change_data(user_id, channel_name, current_date)
+
+        await message.answer(f"Payment for the {channel_name} channel was successful!\nYour subscription will be valid for {config["payment"]['subscription_duration']} days"
+                            , reply_markup=start_keyboard)
 
 @router.callback_query()
 async def general_start(callback: CallbackQuery, state: FSMContext):
@@ -90,11 +120,20 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
             [types.InlineKeyboardButton(text='Pay with card using Stripe',callback_data=f'stripe={callback_data}')],
             [types.InlineKeyboardButton(text='Pay with card or crypto using TON Pay',callback_data=f'ton={callback_data}')],
         ]
+
         keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
         # Открываем JSON файл
         with open(config_path) as file:
             config = json.load(file)
+
+            if callback_data == 'all':
+                all_cost = 0
+                for channel_cost in config["channels"]["channels_cost"].values(): all_cost += int(channel_cost)
+
+                wallet = config["payment"]["pay_wallet"]
+                dur = config["payment"]["subscription_duration"]
+                await callback.bot.send_message(chat_id=user_id, text=f"Your payment is {wallet}{all_cost} for {dur} days", reply_markup=keyboard)
 
             if callback_data in config["channels"]["channels_cost"].keys():
                 cost = config["channels"]["channels_cost"][callback_data]
@@ -103,10 +142,9 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
 
                 await callback.bot.send_message(chat_id=user_id, text=f"Your payment is {wallet}{cost} for {dur} days", reply_markup=keyboard)
 
-
     if callback.data.split('=')[0] == "ton":
 
-        callback_data = callback.data.split('=')[1]
+        callback_data = callback.data.split('=')[1]        
 
         # Открываем JSON файл
         with open(config_path) as file:
@@ -124,11 +162,20 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
 
                 orders.add_element(str(user_id), externalId, 300)  # Добавляем элемент, который удалится через 300 секунд
 
-                order_link = ton_client.get_pay_link(user_id=str(user_id),
-                                                        amount=config["channels"]['channels_cost'][callback_data],
-                                                        description=f'Payment for subscription to {callback_data} channel',
-                                                        bot_url=config['bot']["url"],
-                                                        externalId=externalId)
+                if callback_data == all:
+                    all_cost = 0
+                    for channel_cost in config["channels"]["channels_cost"].values(): all_cost += int(channel_cost)
+                    order_link = ton_client.get_pay_link(user_id=str(user_id),
+                                                            amount=str(all_cost),
+                                                            description=f'Payment for subscription to {callback_data} channel',
+                                                            bot_url=config['bot']["url"],
+                                                            externalId=externalId)
+                else:
+                    order_link = ton_client.get_pay_link(user_id=str(user_id),
+                                                            amount=config["channels"]['channels_cost'][callback_data],
+                                                            description=f'Payment for subscription to {callback_data} channel',
+                                                            bot_url=config['bot']["url"],
+                                                            externalId=externalId)
 
                 if len(order_link) > 0: 
                     await callback.bot.send_message(chat_id=user_id, text=f"Your payment link: {order_link}. It will be valid for 5 minutes")
@@ -147,18 +194,37 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
         with open(config_path) as file:
             config = json.load(file)
 
-            await callback.bot.send_invoice(
-                            callback.from_user.id,
-                            title=callback_data,
-                            description=f"Activation of subscription to {callback_data}.\n{config['channels']['channels_description'][callback_data]}",
-                            provider_token=config['Stripe']['TOKEN'],
-                            currency="usd",
-                            photo_url="https://www.aroged.com/wp-content/uploads/2022/06/Telegram-has-a-premium-subscription.jpg",
-                            photo_width=416,
-                            photo_height=234,
-                            photo_size=416,
-                            is_flexible=False,
-                            prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]['subscription_duration'])} days',
-                                                        amount=int(float(config['channels']['channels_cost'][callback_data])*100))], # Цена в копейках
-                            start_parameter="one-month-subscription",
-                            payload=str(config['channels']['channels_id'][callback_data]))
+            if callback_data == 'all':
+                all_cost = 0
+                for channel_cost in config["channels"]["channels_cost"].values(): all_cost += int(channel_cost)
+                await callback.bot.send_invoice(
+                                callback.from_user.id,
+                                title=callback_data,
+                                description=f"Activation of subscription to {callback_data}",
+                                provider_token=config['Stripe']['TOKEN'],
+                                currency="usd",
+                                photo_url="https://www.aroged.com/wp-content/uploads/2022/06/Telegram-has-a-premium-subscription.jpg",
+                                photo_width=416,
+                                photo_height=234,
+                                photo_size=416,
+                                is_flexible=False,
+                                prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]['subscription_duration'])} days',
+                                                            amount=int(float(all_cost)*100))], # Цена в копейках
+                                start_parameter="one-month-subscription",
+                                payload='all')
+            else:
+                await callback.bot.send_invoice(
+                                callback.from_user.id,
+                                title=callback_data,
+                                description=f"Activation of subscription to {callback_data}.\n{config['channels']['channels_description'][callback_data]}",
+                                provider_token=config['Stripe']['TOKEN'],
+                                currency="usd",
+                                photo_url="https://www.aroged.com/wp-content/uploads/2022/06/Telegram-has-a-premium-subscription.jpg",
+                                photo_width=416,
+                                photo_height=234,
+                                photo_size=416,
+                                is_flexible=False,
+                                prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]['subscription_duration'])} days',
+                                                            amount=int(float(config['channels']['channels_cost'][callback_data])*100))], # Цена в копейках
+                                start_parameter="one-month-subscription",
+                                payload=str(config['channels']['channels_id'][callback_data]))
