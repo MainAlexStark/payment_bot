@@ -3,6 +3,8 @@ from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram import types
 from aiogram.types import Message
+from aiogram.filters import Command, StateFilter
+from aiogram.fsm.context import FSMContext
 
 from aiogram.fsm.state import StatesGroup, State
 
@@ -24,10 +26,9 @@ from WalletPay import WalletPayAPI
 
 router = Router()
 
-db_client = UserDataBase('DB/users.db')
-
 @router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
+    db_client = UserDataBase('DB/users.db')
 
     if message.chat.type == "private":
 
@@ -139,6 +140,7 @@ async def cmd_start(message: Message, state: FSMContext):
 
 @router.message(Command("products"))
 async def cmd_products(message: Message):
+    db_client = UserDataBase('DB/users.db')
 
     if message.chat.type == "private":
 
@@ -195,6 +197,7 @@ async def cmd_products(message: Message):
 
 @router.message(Command("help"))
 async def cmd_help(message: Message):
+    db_client = UserDataBase('DB/users.db')
 
     if message.chat.type == "private":
 
@@ -228,13 +231,9 @@ async def cmd_help(message: Message):
         
             await message.answer(string)
 
-@router.message(Command("test"))
-async def cmd_help(message: Message):
-    link = await message.bot.create_chat_invite_link(-1002121864646, member_limit=1).invite_link
-    await message.reply(text=link.invite_link)
-
 @router.message(Command("status"))
 async def cmd_status(message: Message):
+    db_client = UserDataBase('DB/users.db')
 
     if message.chat.type == "private":
 

@@ -6,9 +6,10 @@ db_client =  db.UserDataBase('DB/users.db')
 # 684124197
 #6525546927
 #db_client.change_data(6525546927,'free_trial' , 1)
-db_client.change_data(6525546927,'start_free_trial' , '22.03.2024')
+#db_client.change_data(6525546927,'start_free_trial' , '22.03.2024')
 #db_client.del_user(6525546927)
 #db.add_column('paid_test_channel_2', 'TEXT')
+db_client.del_column('name')
 db_client.print()
 
 # получаем данные о пользователе
