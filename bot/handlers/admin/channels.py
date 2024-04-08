@@ -121,7 +121,7 @@ async def cmd_help(message: Message, state: FSMContext):
     db_client = UserDataBase('DB/users.db')
     channel_data = await state.get_data()
 
-    db_client.add_column(channel_data['name'], 'TEXT')
+    db_client.add_column(channel_data['name'].repalce(' ','_'), 'TEXT')
 
     # Открываем JSON файл
     with open(config_path, 'r+') as file:
