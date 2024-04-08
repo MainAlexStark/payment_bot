@@ -96,7 +96,7 @@ async def check(bot):
 
                 date_channel = db.get_column(user_id, channel_column)
 
-                message = f"We value our relationship and would like to inform you that your subscription will end in {config["payment"]["days_notice"]} days."
+                message = f'We value our relationship and would like to inform you that your subscription will end in {config["payment"]["days_notice"]} days.'
 
                 buttons = [
                     [types.InlineKeyboardButton(text="Renew the subscription", callback_data=f"pay={channel_name}")],
@@ -133,7 +133,7 @@ async def check(bot):
                             if user_channel_status.status != 'left':
                                 continue
 
-                            channels.append(types.InlineKeyboardButton(text=f"{channel_name} - {config["payment"]["pay_wallet"]}{channel_cost} for {config["payment"]["subscription_duration"]} days",\
+                            channels.append(types.InlineKeyboardButton(text=f'{channel_name} - {config["payment"]["pay_wallet"]}{channel_cost} for {config["payment"]["subscription_duration"]} days',\
                                                                     callback_data=f"{channel_name}"))
                         all_cost = 0
                         for channel_cost in config["channels"]["channels_cost"].values(): all_cost += int(channel_cost)
