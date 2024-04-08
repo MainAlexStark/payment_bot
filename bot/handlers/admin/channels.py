@@ -47,6 +47,7 @@ async def cmd_help(message: Message, state: FSMContext):
         num_not_free_trial = 0
 
         channels_sub = {}
+        channels_un_sub = {}
 
         for user in ids:
             user_id  = user[0]
@@ -61,12 +62,19 @@ async def cmd_help(message: Message, state: FSMContext):
                         channels_sub[channel_name] += 1
                     else:
                         channels_sub[channel_name] = 1
+                else:
+                    if channel_name in channels_un_sub:
+                        channels_un_sub[channel_name] += 1
+                    else:
+                        channels_un_sub[channel_name] = 1
 
 
         str_result += f'\nnum_free_trial={num_free_trial}\nnum_not_free_trial={num_not_free_trial}\n\nChannel statistics:'
 
+        print(channels_sub)
         for channel, sub in channels_sub.items():
-            str_result += f'\n{channel} - {sub} people who bought'
+            not_sub = channels_un_sub[channel]
+            str_result += f'\n{channel} - {sub} people who bought, {not_sub} people who not bought,'
 
         await message.reply(str_result)
 

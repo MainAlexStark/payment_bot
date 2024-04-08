@@ -115,8 +115,8 @@ async def cmd_start(message: Message, state: FSMContext):
 
             buttons = []
 
-            buttons.append([types.KeyboardButton(text='/products')])
-            buttons.append([types.KeyboardButton(text='/status')])
+            buttons.append([types.KeyboardButton(text='/our_products')])
+            buttons.append([types.KeyboardButton(text='/my_subscriptions')])
 
             greet_kb = types.ReplyKeyboardMarkup(keyboard=buttons,resize_keyboard=True)
 
@@ -252,6 +252,8 @@ async def cmd_status(message: Message):
         # Открываем JSON файл
         with open(config_path) as file:
             config = json.load(file)
+            # Получаем сегодняшнюю дату
+            today = datetime.now().date()
 
             buttons = []
 
@@ -268,13 +270,23 @@ async def cmd_status(message: Message):
 
                 if free_trial:
                     end_free_trial = (date + timedelta(days=int(config['payment']["trial_period"]))).strftime('%d-%m-%Y')
+                    # Преобразуем дату end_sub из строки в объект datetime
+                    end_free_trial_date = datetime.strptime(end_free_trial, '%d-%m-%Y').date()
+                    # Вычисляем разницу между end_sub_date и сегодняшней датой
+                    days_left = (end_free_trial_date - today).days
+
                     link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
-                    buttons.append([types.InlineKeyboardButton(text=f'Go to{channel_name} - Free trial ends in {end_free_trial}',\
+                    buttons.append([types.InlineKeyboardButton(text=f'{channel_name} - Free trial ends in {days_left} days',\
                                                 url=link.invite_link)])
                 elif db_client.get_column(user_id, channel_name.replace(' ','_')) is not None:
                     end_sub = (date + timedelta(days=int(config['payment']["subscription_duration"]))).strftime('%d-%m-%Y')
+                    # Преобразуем дату end_sub из строки в объект datetime
+                    end_sub_date = datetime.strptime(end_sub, '%d-%m-%Y').date()
+                    # Вычисляем разницу между end_sub_date и сегодняшней датой
+                    days_left = (end_sub_date - today).days
+
                     link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
-                    buttons.append([types.InlineKeyboardButton(text=f'Go to {channel_name} - Subscription ends in {end_sub}',\
+                    buttons.append([types.InlineKeyboardButton(text=f'{channel_name} - Subscription ends in {days_left} days',\
                                                 url=link.invite_link)])
     
             keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
