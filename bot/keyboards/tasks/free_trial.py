@@ -19,7 +19,7 @@ with open(config_path) as file:
                                                   callback_data=f"pay={channel_name}")])
         
     all_cost = 0
-    for channel_cost in config["channels"]["channels_cost"].values(): all_cost += int(channel_cost)
+    for channel_cost in config["channels"]["channels_cost"].values(): all_cost += float(channel_cost)
     channels.append([types.InlineKeyboardButton(text=f"All channels - {config["payment"]["pay_wallet"]}{all_cost} for {config["payment"]["subscription_duration"]} days",\
                                                 callback_data=f"pay=all")])
     

@@ -11,10 +11,6 @@ from handlers.admin import channels
 from handlers.client import default, payment
 from ui_commands import set_bot_commands
 
-# Открываем JSON файл
-with open('config.json') as file:
-    config = json.load(file)
-
 # Асинхронная функция для запуска проверки дат каждые 24 часа
 async def scheduled(bot ,sleep_for):
     while True:
@@ -30,6 +26,10 @@ async def main():
 
     orders = {}
 
+    # Открываем JSON файл
+    with open('config.json') as file:
+        config = json.load(file)
+
     bot = Bot(config["bot"]["TOKEN"])
 
     # await bot.unban_chat_member(-1002121864646, 6525546927)
@@ -39,12 +39,6 @@ async def main():
     print(user_channel_status.status)
     user_channel_status = await bot.get_chat_member(chat_id=-1002115165052, user_id=6525546927)
     print(user_channel_status.status)
-
-    # Если пользователь подписан на канал
-    
-
-    #user_channel_status = await bot.get_chat_member(-1002066507370, 6525546927)
-    #print(user_channel_status.status)
 
     storage = MemoryStorage()
 
@@ -61,7 +55,7 @@ async def main():
 
     # Отправьте асинхронную задачу для постоянной проверки окончания подписки или пробного периода на какой либо канал
     asyncio.create_task(scheduled(bot, 86400))  # 86400 секунд - это 24 часа
-    asyncio.create_task(paid_handler(bot, 300))  # Проверяем оплату
+    asyncio.create_task(paid_handler(bot, 60))  # Проверяем оплату
 
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
@@ -71,8 +65,5 @@ async def main():
 
 if __name__ == '__main__':
 
-
     print('BOT START')
     asyncio.run(main())
-    # except Exception as e:
-    #     print(e)

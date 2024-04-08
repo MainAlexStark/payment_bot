@@ -31,8 +31,6 @@ async def check(bot):
         cursor.execute('SELECT id FROM users')
         values = cursor.fetchall()
 
-        print(f'number of users={len(values)}')
-
         now = datetime.now().strftime('%d.%m.%Y')
 
         # Перебираем всех пользователей по id
@@ -66,21 +64,21 @@ async def check(bot):
                                                                 callback_data=f"pay={channel_name}")])
                         
                     all_cost = 0
-                    for channel_cost in config["channels"]["channels_cost"].values(): all_cost += int(channel_cost)
+                    for channel_cost in config["channels"]["channels_cost"].values(): all_cost += float(channel_cost)
                     channels.append([types.InlineKeyboardButton(text=f"All channels - {config["payment"]["pay_wallet"]}{all_cost} for {config["payment"]["subscription_duration"]} days",\
                                                                 callback_data=f"pay=all")])
                     
                     free_trial_end_keyboard = types.InlineKeyboardMarkup(inline_keyboard=channels)
 
                 # Отправляем сообщение пользователям
-                print(f"предупреждение о конец бесплатной версии {date + timedelta(days=config['payment']["trial_period"]) - timedelta(days=config["payment"]["days_notice"])}")
+                print(f"предупреждение о конец бесплатной версии {date + timedelta(days=int(config['payment']["trial_period"])) - timedelta(days=int(config["payment"]["days_notice"]))}")
                 #print(f"конец бесплатной версии {date + timedelta(days=config['payment']["trial_period"])}")
-                if datetime.strptime(now, '%d.%m.%Y') == date + timedelta(days=config['payment']["trial_period"]) - timedelta(days=config["payment"]["days_notice"]):
+                if datetime.strptime(now, '%d.%m.%Y') == date + timedelta(days=int(config['payment']["trial_period"])) - timedelta(days=int(config["payment"]["days_notice"])):
                     await bot.send_message(chat_id=user_id, text=message, reply_markup=free_trial_end_keyboard)
 
                 message = strings['end_free_trial']
                 # Баним пользователей
-                if  datetime.strptime(now, '%d.%m.%Y') >= date + timedelta(days=config["payment"]["trial_period"]):
+                if  datetime.strptime(now, '%d.%m.%Y') >= date + timedelta(days=int(config["payment"]["trial_period"])):
                     for channel_name, channel_id in config["channels"]["channels_id"].items():
                         if db.get_column(user_id, channel_name) is None:
                             try:
@@ -100,7 +98,7 @@ async def check(bot):
 
                 date_channel = db.get_column(user_id, channel_column)
 
-                message = f"We value our relationship and would like to inform you that your subscription will end in {str(config["payment"]["days_notice"])} days."
+                message = f"We value our relationship and would like to inform you that your subscription will end in {config["payment"]["days_notice"]} days."
 
                 buttons = [
                     [types.InlineKeyboardButton(text="Renew the subscription", callback_data=f"pay={channel_name}")],
@@ -116,11 +114,11 @@ async def check(bot):
                     date = datetime.strptime(date_str, '%d.%m.%Y')
 
                     # Отправляем сообщение пользователям
-                    if datetime.strptime(now, '%d.%m.%Y') == date + timedelta(days=config["payment"]["subscription_duration"]) - timedelta(days=config["payment"]["days_notice"]):
+                    if datetime.strptime(now, '%d.%m.%Y') == date + timedelta(days=int(config["payment"]["subscription_duration"])) - timedelta(days=int(config["payment"]["days_notice"])):
                         await bot.send_message(chat_id=user_id, text=message, reply_markup=keyboard)
 
                     # Баним пользователей
-                    if datetime.strptime(now, '%d.%m.%Y') >= date + timedelta(days=config["payment"]["subscription_duration"]):
+                    if datetime.strptime(now, '%d.%m.%Y') >= date + timedelta(days=int(config["payment"]["subscription_duration"])):
                         print(f'Бан пользователя id={user_id} по причине конца подписки на канал {channel_name}')
                         await bot.ban_chat_member(channel_id, user_id)
                         db.change_data(user_id, channel_column, None)

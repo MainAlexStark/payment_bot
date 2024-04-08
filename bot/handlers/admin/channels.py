@@ -13,9 +13,64 @@ import strings
 
 import json, os
 
+# Получаем путь к текущему файлу temp.py
+current_path = os.path.abspath(__file__)
 
+# Формируем путь к файлу config.json
+config_path = os.path.join(os.path.dirname(current_path), '../../config.json')
 
 router = Router()
+
+@router.message(Command("statistics"))
+async def cmd_help(message: Message, state: FSMContext):
+
+    if message.chat.type == "private":
+
+        db = UserDataBase('DB/users.db')
+
+        # Открываем JSON файл
+        with open(config_path) as file:
+            config = json.load(file)
+
+        # Подключаемся к базе данных
+        conn = db.connect()
+        cursor = conn.cursor()
+
+        str_result = 'Your statistics:'
+
+        # Получаем id всех пользовтелей
+        cursor.execute('SELECT id FROM users')
+        ids = cursor.fetchall()
+
+        num_users = len(ids)
+        num_free_trial = 0
+        num_not_free_trial = 0
+
+        channels_sub = {}
+
+        for user in ids:
+            user_id  = user[0]
+            user_data = db.get_data(user_id)
+            if user_data[1] == 1: num_free_trial += 1
+            if user_data[1] == 0: num_not_free_trial += 1
+
+            for channel_name in config['channels']['channels_id'].keys():
+                channel_data = db.get_column(user_id, channel_name.replace(' ','_'))
+                if channel_data is not None: 
+                    if channel_name in channels_sub:
+                        channels_sub[channel_name] += 1
+                    else:
+                        channels_sub[channel_name] = 1
+
+
+        str_result += f'\nnum_free_trial={num_free_trial}\nnum_not_free_trial={num_not_free_trial}\n\nChannel statistics:'
+
+        for channel, sub in channels_sub.items():
+            str_result += f'\n{channel} - {sub} people who bought'
+
+        await message.reply(str_result)
+
+
 
 class Add_channel(StatesGroup):
     set_name = State()
@@ -26,22 +81,14 @@ class Add_channel(StatesGroup):
 
 @router.message(Command("add_channel"))
 async def cmd_help(message: Message, state: FSMContext):
-    db_client = UserDataBase('DB/users.db')
-
+    
     if message.chat.type == "private":
-
+        db_client = UserDataBase('DB/users.db')
         user_id = message.from_user.id
-
-        # Получаем путь к текущему файлу temp.py
-        current_path = os.path.abspath(__file__)
-
-        # Формируем путь к файлу config.json
-        config_path = os.path.join(os.path.dirname(current_path), '../../config.json')
 
         # Открываем JSON файл
         with open(config_path) as file:
             config = json.load(file)
-
 
             if user_id in config['admins']:
 
@@ -76,12 +123,6 @@ async def cmd_help(message: Message, state: FSMContext):
 
     db_client.add_column(channel_data['name'], 'TEXT')
 
-    # Получаем путь к текущему файлу temp.py
-    current_path = os.path.abspath(__file__)
-
-    # Формируем путь к файлу config.json
-    config_path = os.path.join(os.path.dirname(current_path), '../../config.json')
-
     # Открываем JSON файл
     with open(config_path, 'r+') as file:
         config = json.load(file)
@@ -115,13 +156,7 @@ async def cmd_del_channel(message: Message, state: FSMContext):
 async def cmd_del_channel_name(message: Message, state: FSMContext):
     db_client = UserDataBase('DB/users.db')
 
-    db_client.del_column(message.text)
-
-    # Получаем путь к текущему файлу temp.py
-    current_path = os.path.abspath(__file__)
-
-    # Формируем путь к файлу config.json
-    config_path = os.path.join(os.path.dirname(current_path), '../../config.json')
+    db_client.del_column(message.text.replace(' ','_'))
 
     # Открываем JSON файл
     with open(config_path, 'r+') as file:
@@ -150,12 +185,6 @@ async def cmd_del_channel(message: Message, state: FSMContext):
 
     if message.chat.type == "private":
 
-        # Получаем путь к текущему файлу temp.py
-        current_path = os.path.abspath(__file__)
-
-        # Формируем путь к файлу config.json
-        config_path = os.path.join(os.path.dirname(current_path), '../../config.json')
-
         # Открываем JSON файл
         with open(config_path, 'r+') as file:
             config = json.load(file)
@@ -183,16 +212,10 @@ async def cmd_del_channel(message: Message, state: FSMContext):
     db_client = UserDataBase('DB/users.db')
     data = await state.get_data()
 
-    # Получаем путь к текущему файлу temp.py
-    current_path = os.path.abspath(__file__)
-
-    # Формируем путь к файлу config.json
-    config_path = os.path.join(os.path.dirname(current_path), '../../config.json')
-
     with open(config_path, 'r+') as file:
         config = json.load(file)
 
-        config['payment'][data['name']] = int(message.text)
+        config['payment'][data['name']] = message.text
 
         file.seek(0)  # Перемещаем указатель в начало файла
         json.dump(config, file)

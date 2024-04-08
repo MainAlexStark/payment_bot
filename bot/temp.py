@@ -9,7 +9,7 @@ db_client =  db.UserDataBase('DB/users.db')
 #db_client.change_data(6525546927,'start_free_trial' , '22.03.2024')
 #db_client.del_user(6525546927)
 #db.add_column('paid_test_channel_2', 'TEXT')
-db_client.del_column('name')
+#db_client.del_column('name')
 db_client.print()
 
 # получаем данные о пользователе
@@ -24,7 +24,7 @@ with open('config.json') as file:
     date = datetime.strptime(date_str, '%d.%m.%Y')
     now = datetime.now().strftime('%d.%m.%Y')
 
-    end_data = date - timedelta(days=config['payment']["trial_period"]) + timedelta(days=config['payment']["days_notice"])
+    end_data = date - timedelta(days=int(config['payment']["trial_period"])) + timedelta(days=int(config['payment']["days_notice"]))
     print(end_data)
 
 # import requests

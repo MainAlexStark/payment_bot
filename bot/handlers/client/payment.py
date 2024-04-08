@@ -52,7 +52,7 @@ async def successful_payment(message: types.Message) -> None:
                 await message.bot.unban_chat_member(channel_id, user_id)
 
                 # Вводим изменения в базу данных
-                db_client.change_data(user_id, channel_name, current_date)
+                db_client.change_data(user_id, channel_name.replace(' ','_'), current_date)
                 
                 link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
 
@@ -95,7 +95,7 @@ async def successful_payment(message: types.Message) -> None:
         # Получаем текущую дату
         current_date = datetime.now().strftime("%d.%m.%Y")
 
-        db_client.change_data(user_id, channel_name, current_date)
+        db_client.change_data(user_id, channel_name.replace(' ','_'), current_date)
 
         await message.answer(f"Payment for the {channel_name} channel was successful!\nYour subscription will be valid for {config["payment"]['subscription_duration']} days"
                             , reply_markup=start_keyboard)
@@ -119,6 +119,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
         buttons = [
             [types.InlineKeyboardButton(text='Pay with card using Stripe',callback_data=f'stripe={callback_data}')],
             [types.InlineKeyboardButton(text='Pay with card or crypto using TON Pay',callback_data=f'ton={callback_data}')],
+            #[types.InlineKeyboardButton(text='Pay with card using SBER',callback_data=f'sber={callback_data}')],
         ]
 
         keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
@@ -160,10 +161,9 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
             else:
                 externalId = str(time.time())
 
-                orders.add_element(str(user_id), externalId, 300)  # Добавляем элемент, который удалится через 300 секунд
-
                 if callback_data == all:
                     all_cost = 0
+                    orders.add_element(str(user_id), externalId, 'all', 300)  # Добавляем элемент, который удалится через 300 секунд
                     for channel_cost in config["channels"]["channels_cost"].values(): all_cost += int(channel_cost)
                     order_link = ton_client.get_pay_link(user_id=str(user_id),
                                                             amount=str(all_cost),
@@ -171,6 +171,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                                                             bot_url=config['bot']["url"],
                                                             externalId=externalId)
                 else:
+                    orders.add_element(str(user_id), externalId, str(config['channels']['channels_id'][callback_data]), 300)  # Добавляем элемент, который удалится через 300 секунд
                     order_link = ton_client.get_pay_link(user_id=str(user_id),
                                                             amount=config["channels"]['channels_cost'][callback_data],
                                                             description=f'Payment for subscription to {callback_data} channel',
@@ -218,6 +219,52 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                                 title=callback_data,
                                 description=f"Activation of subscription to {callback_data}.\n{config['channels']['channels_description'][callback_data]}",
                                 provider_token=config['Stripe']['TOKEN'],
+                                currency="usd",
+                                photo_url="https://www.aroged.com/wp-content/uploads/2022/06/Telegram-has-a-premium-subscription.jpg",
+                                photo_width=416,
+                                photo_height=234,
+                                photo_size=416,
+                                is_flexible=False,
+                                prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]['subscription_duration'])} days',
+                                                            amount=int(float(config['channels']['channels_cost'][callback_data])*100))], # Цена в копейках
+                                start_parameter="one-month-subscription",
+                                payload=str(config['channels']['channels_id'][callback_data]))
+                
+
+
+
+    if callback.data.split('=')[0] == "sber":
+
+        callback_data = callback.data.split('=')[1]
+
+        # Открываем JSON файл
+        with open(config_path) as file:
+            config = json.load(file)
+
+            if callback_data == 'all':
+                all_cost = 0
+                for channel_cost in config["channels"]["channels_cost"].values(): all_cost += int(channel_cost)
+                await callback.bot.send_invoice(
+                                callback.from_user.id,
+                                title=callback_data,
+                                description=f"Activation of subscription to {callback_data}",
+                                provider_token=config['Sber']['TOKEN'],
+                                currency="usd",
+                                photo_url="https://www.aroged.com/wp-content/uploads/2022/06/Telegram-has-a-premium-subscription.jpg",
+                                photo_width=416,
+                                photo_height=234,
+                                photo_size=416,
+                                is_flexible=False,
+                                prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]['subscription_duration'])} days',
+                                                            amount=int(float(all_cost)*100))], # Цена в копейках
+                                start_parameter="one-month-subscription",
+                                payload='all')
+            else:
+                await callback.bot.send_invoice(
+                                callback.from_user.id,
+                                title=callback_data,
+                                description=f"Activation of subscription to {callback_data}.\n{config['channels']['channels_description'][callback_data]}",
+                                provider_token=config['Sber']['TOKEN'],
                                 currency="usd",
                                 photo_url="https://www.aroged.com/wp-content/uploads/2022/06/Telegram-has-a-premium-subscription.jpg",
                                 photo_width=416,

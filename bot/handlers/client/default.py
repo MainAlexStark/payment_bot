@@ -47,8 +47,6 @@ async def cmd_start(message: Message, state: FSMContext):
         sub_channel = {}
         sub_channel_flag = True
 
-        not_sub_channel_str = ''
-
         buttons = []
 
         with open(config_path) as file:
@@ -79,7 +77,7 @@ async def cmd_start(message: Message, state: FSMContext):
                                                         callback_data=f"pay={channel_name}")])
                 
             all_cost = 0
-            for channel_cost in config["channels"]["channels_cost"].values(): all_cost += int(channel_cost)
+            for channel_cost in config["channels"]["channels_cost"].values(): all_cost += float(channel_cost)
             channels.append([types.InlineKeyboardButton(text=f"All channels - {config["payment"]["pay_wallet"]}{all_cost} for {config["payment"]["subscription_duration"]} days",\
                                                         callback_data=f"pay=all")])
             
@@ -171,22 +169,22 @@ async def cmd_products(message: Message):
                                                   url=channel_url)])
 
             for channel_name, channel_id in config['channels']['channels_id'].items():
-                is_sub = db_client.get_column(user_id, channel_name)
+                is_sub = db_client.get_column(user_id, channel_name.replace(' ','_'))
                 user_channel_status = await message.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
                 free_trial = False
                 if db_client.get_data(user_id)[1]  == 1: free_trial = True
                 # Если пользователь подписан на канал получаем сколько ему осталось до конца подписки или пробного периода
                 if free_trial:
-                    end_free_trial = (date + timedelta(days=config['payment']["trial_period"])).strftime('%d-%m-%Y')
+                    end_free_trial = (date + timedelta(days=int(config['payment']["trial_period"]))).strftime('%d-%m-%Y')
                     link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
                     buttons.append([types.InlineKeyboardButton(text=f'Go to{channel_name} - Free trial ends in {end_free_trial}',\
                                                 url=link.invite_link)])
-                elif db_client.get_column(user_id, channel_name) is not None:
-                    end_sub = (date + timedelta(days=config['payment']["subscription_duration"])).strftime('%d-%m-%Y')
+                elif db_client.get_column(user_id, channel_name.replace(' ','_')) is not None:
+                    end_sub = (date + timedelta(days=int(config['payment']["subscription_duration"]))).strftime('%d-%m-%Y')
                     link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
                     buttons.append([types.InlineKeyboardButton(text=f'Go to {channel_name} - Subscription ends in {end_sub}',\
                                                 url=link.invite_link)])
-                elif db_client.get_column(user_id, channel_name) is None:
+                elif db_client.get_column(user_id, channel_name.replace(' ','_')) is None:
                     buttons.append([types.InlineKeyboardButton(text=f'{channel_name} - {config["payment"]["pay_wallet"]}{config['channels']['channels_cost'][channel_name]} for {config["payment"]["subscription_duration"]} days',\
                                                 callback_data=f'pay={channel_name}')])
     
@@ -262,19 +260,19 @@ async def cmd_status(message: Message):
                                                   url=channel_url)])
 
             for channel_name, channel_id in config['channels']['channels_id'].items():
-                is_sub = db_client.get_column(user_id, channel_name)
+                is_sub = db_client.get_column(user_id, channel_name.replace(' ','_'))
                 user_channel_status = await message.bot.get_chat_member(chat_id=channel_id, user_id=user_id)
                 free_trial = False
                 if db_client.get_data(user_id)[1]  == 1: free_trial = True
                 # Если пользователь подписан на канал получаем сколько ему осталось до конца подписки или пробного периода
 
                 if free_trial:
-                    end_free_trial = (date + timedelta(days=config['payment']["trial_period"])).strftime('%d-%m-%Y')
+                    end_free_trial = (date + timedelta(days=int(config['payment']["trial_period"]))).strftime('%d-%m-%Y')
                     link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
                     buttons.append([types.InlineKeyboardButton(text=f'Go to{channel_name} - Free trial ends in {end_free_trial}',\
                                                 url=link.invite_link)])
-                elif db_client.get_column(user_id, channel_name) is not None:
-                    end_sub = (date + timedelta(days=config['payment']["subscription_duration"])).strftime('%d-%m-%Y')
+                elif db_client.get_column(user_id, channel_name.replace(' ','_')) is not None:
+                    end_sub = (date + timedelta(days=int(config['payment']["subscription_duration"]))).strftime('%d-%m-%Y')
                     link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
                     buttons.append([types.InlineKeyboardButton(text=f'Go to {channel_name} - Subscription ends in {end_sub}',\
                                                 url=link.invite_link)])

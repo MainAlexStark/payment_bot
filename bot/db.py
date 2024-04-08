@@ -180,7 +180,7 @@ class UserDataBase():
             return True
         
         except Exception as e:
-            print(f'Не удалось изменить таблицу\n Ошибка:{e}')
+            print(f'Не удалось изменить таблицу\nОшибка:{e}')
 
 
 

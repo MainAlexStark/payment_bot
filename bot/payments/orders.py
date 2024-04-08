@@ -5,9 +5,10 @@ class OrdersStorage:
     def __init__(self):
         self.storage = {}
 
-    def add_element(self, key, value, expiration_time):
+    def add_element(self, key, value, channel, expiration_time):
         self.storage[key] = {
             'value': value,
+            'channel': channel,
             'expiration_time': time.time() + expiration_time
         }
         # Создаем отдельный поток для удаления элемента после истечения времени
