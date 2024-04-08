@@ -121,7 +121,7 @@ async def cmd_help(message: Message, state: FSMContext):
     db_client = UserDataBase('DB/users.db')
     channel_data = await state.get_data()
 
-    db_client.add_column(channel_data['name'].repalce(' ','_'), 'TEXT')
+    db_client.add_column(channel_data['name'].replace(' ','_'), 'TEXT')
 
     # Открываем JSON файл
     with open(config_path, 'r+') as file:
@@ -129,7 +129,7 @@ async def cmd_help(message: Message, state: FSMContext):
 
         config['channels']['channels_cost'][channel_data['name']] = channel_data['cost']
         config['channels']['channels_description'][channel_data['name']] = channel_data['desr']
-        config['channels']['channels_id'][channel_data['name']] = message.text
+        config['channels']['channels_id'][channel_data['name']] = int(message.text)
 
         file.seek(0)  # Перемещаем указатель в начало файла
         json.dump(config, file)
