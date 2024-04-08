@@ -70,8 +70,6 @@ async def check(bot):
                     
                     free_trial_end_keyboard = types.InlineKeyboardMarkup(inline_keyboard=channels)
 
-                # Отправляем сообщение пользователям
-                print(f"предупреждение о конец бесплатной версии {date + timedelta(days=int(config['payment']["trial_period"])) - timedelta(days=int(config["payment"]["days_notice"]))}")
                 #print(f"конец бесплатной версии {date + timedelta(days=config['payment']["trial_period"])}")
                 if datetime.strptime(now, '%d.%m.%Y') == date + timedelta(days=int(config['payment']["trial_period"])) - timedelta(days=int(config["payment"]["days_notice"])):
                     await bot.send_message(chat_id=user_id, text=message, reply_markup=free_trial_end_keyboard)
