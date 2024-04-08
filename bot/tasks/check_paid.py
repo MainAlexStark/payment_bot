@@ -73,7 +73,7 @@ async def check(bot):
                             # Создаем клавиатуру с каналами, на которые нет подписки
                             start_keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
-                            await bot.send_message.answer(user_id, f"Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]['subscription_duration']} days"
+                            await bot.send_message.answer(user_id, f'Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]['subscription_duration']} days'
                                             , reply_markup=start_keyboard)
                             
                     else:
@@ -107,7 +107,7 @@ async def check(bot):
 
                         db_client.change_data(user_id, channel_name.replace(' ','_'), current_date)
 
-                        await bot.send_message(user_id, f"Payment for the {channel_name} channel was successful!\nYour subscription will be valid for {config["payment"]['subscription_duration']} days"
+                        await bot.send_message(user_id, f'Payment for the {channel_name} channel was successful!\nYour subscription will be valid for {config["payment"]['subscription_duration']} days'
                                             , reply_markup=start_keyboard)
 
                         

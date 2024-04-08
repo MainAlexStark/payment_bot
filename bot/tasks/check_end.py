@@ -50,7 +50,7 @@ async def check(bot):
                 # Создаем сообщение
                 message = f'We value our relationship and would like to inform you that your subscription will end in {config["payment"]["days_notice"]} days'
                 i = 1
-                for des in config["channels"]['channels_description'].values():
+                for des in config['channels']['channels_description'].values():
                     message += f'\n{i}. {des}'
                     i += 1
 
@@ -60,12 +60,12 @@ async def check(bot):
                         user_channel_status = await bot.get_chat_member(chat_id=config['channels']['channels_id'][channel_name], user_id=user_id)
                         if user_channel_status.status != 'left' and user_channel_status.status != 'kicked': 
                             continue
-                        channels.append([types.InlineKeyboardButton(text=f"{channel_name} - {config["payment"]["pay_wallet"]}{channel_cost} for {config["payment"]["subscription_duration"]} days",\
-                                                                callback_data=f"pay={channel_name}")])
+                        channels.append([types.InlineKeyboardButton(text=f'{channel_name} - {config["payment"]["pay_wallet"]}{channel_cost} for {config["payment"]["subscription_duration"]} days',\
+                                                                callback_data=f'pay={channel_name}')])
                         
                     all_cost = 0
                     for channel_cost in config["channels"]["channels_cost"].values(): all_cost += float(channel_cost)
-                    channels.append([types.InlineKeyboardButton(text=f"All channels - {config["payment"]["pay_wallet"]}{all_cost} for {config["payment"]["subscription_duration"]} days",\
+                    channels.append([types.InlineKeyboardButton(text=f'All channels - {config["payment"]["pay_wallet"]}{all_cost} for {config["payment"]["subscription_duration"]} days',\
                                                                 callback_data=f"pay=all")])
                     
                     free_trial_end_keyboard = types.InlineKeyboardMarkup(inline_keyboard=channels)
@@ -139,7 +139,7 @@ async def check(bot):
                                                                     callback_data=f"{channel_name}"))
                         all_cost = 0
                         for channel_cost in config["channels"]["channels_cost"].values(): all_cost += int(channel_cost)
-                        channels.append([types.InlineKeyboardButton(text=f"All channels - {config["payment"]["pay_wallet"]}{all_cost} for {config["payment"]["subscription_duration"]} days",\
+                        channels.append([types.InlineKeyboardButton(text=f'All channels - {config["payment"]["pay_wallet"]}{all_cost} for {config["payment"]["subscription_duration"]} days',\
                                                                     callback_data=f"pay=all")])
                             
                         
