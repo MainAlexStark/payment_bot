@@ -73,12 +73,12 @@ async def cmd_start(message: Message, state: FSMContext):
                     continue
 
                 sub_channel_flag = False
-                channels.append([types.InlineKeyboardButton(text=f"{channel_name} - {config["payment"]["pay_wallet"]}{channel_cost} for {config["payment"]["subscription_duration"]} days",\
-                                                        callback_data=f"pay={channel_name}")])
+                channels.append([types.InlineKeyboardButton(text=f'{channel_name} - {config["payment"]["pay_wallet"]}{channel_cost} for {config["payment"]["subscription_duration"]} days",\
+                                                        callback_data=f"pay={channel_name}')])
                 
             all_cost = 0
             for channel_cost in config["channels"]["channels_cost"].values(): all_cost += float(channel_cost)
-            channels.append([types.InlineKeyboardButton(text=f"All channels - {config["payment"]["pay_wallet"]}{all_cost} for {config["payment"]["subscription_duration"]} days",\
+            channels.append([types.InlineKeyboardButton(text=f'All channels - {config["payment"]["pay_wallet"]}{all_cost} for {config["payment"]["subscription_duration"]} days',\
                                                         callback_data=f"pay=all")])
             
             channels_without_subscription = types.InlineKeyboardMarkup(inline_keyboard=channels)
@@ -185,7 +185,7 @@ async def cmd_products(message: Message):
                     buttons.append([types.InlineKeyboardButton(text=f'Go to {channel_name} - Subscription ends in {end_sub}',\
                                                 url=link.invite_link)])
                 elif db_client.get_column(user_id, channel_name.replace(' ','_')) is None:
-                    buttons.append([types.InlineKeyboardButton(text=f'{channel_name} - {config["payment"]["pay_wallet"]}{config['channels']['channels_cost'][channel_name]} for {config["payment"]["subscription_duration"]} days',\
+                    buttons.append([types.InlineKeyboardButton(text=f'{channel_name} - {config["payment"]["pay_wallet"]}{config["channels"]["channels_cost"][channel_name]} for {config["payment"]["subscription_duration"]} days',\
                                                 callback_data=f'pay={channel_name}')])
     
             keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)

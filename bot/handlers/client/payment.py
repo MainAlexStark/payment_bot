@@ -62,7 +62,7 @@ async def successful_payment(message: types.Message) -> None:
             # Создаем клавиатуру с каналами, на которые нет подписки
             start_keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
-            await message.answer(f'Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]['subscription_duration']} days'
+            await message.answer(f'Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
                             , reply_markup=start_keyboard)
             
     else:
@@ -97,7 +97,7 @@ async def successful_payment(message: types.Message) -> None:
 
         db_client.change_data(user_id, channel_name.replace(' ','_'), current_date)
 
-        await message.answer(f'Payment for the {channel_name} channel was successful!\nYour subscription will be valid for {config["payment"]['subscription_duration']} days'
+        await message.answer(f'Payment for the {channel_name} channel was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
                             , reply_markup=start_keyboard)
 
 @router.callback_query()
@@ -209,7 +209,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                                 photo_height=234,
                                 photo_size=416,
                                 is_flexible=False,
-                                prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]['subscription_duration'])} days',
+                                prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]["subscription_duration"])} days',
                                                             amount=int(float(all_cost)*100))], # Цена в копейках
                                 start_parameter="one-month-subscription",
                                 payload='all')
