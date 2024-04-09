@@ -1,4 +1,4 @@
-import db, json
+import db, json, os
 from datetime import datetime, timedelta
 
 db_client =  db.UserDataBase('DB/users.db')
@@ -9,23 +9,50 @@ db_client =  db.UserDataBase('DB/users.db')
 #db_client.change_data(5221675666,'start_free_trial' , '09.04.2024')
 #db_client.del_user(6525546927)
 #db.add_column('paid_test_channel_2', 'TEXT')
-db_client.del_column('test')
-db_client.print()
+# db_client.del_column('test')
+# db_client.print()
 
-# получаем данные о пользователе
-user_data = db_client.get_data(6525546927)
+# # получаем данные о пользователе
+# user_data = db_client.get_data(6525546927)
 
-# Открываем JSON файл
-with open('config.json') as file:
-    config = json.load(file)
+# # Открываем JSON файл
+# with open('config.json') as file:
+#     config = json.load(file)
     
-    # Получаем дату и приводим к нужному формату
-    date_str = user_data[2]
-    date = datetime.strptime(date_str, '%d.%m.%Y')
-    now = datetime.now().strftime('%d.%m.%Y')
+#     # Получаем дату и приводим к нужному формату
+#     date_str = user_data[2]
+#     date = datetime.strptime(date_str, '%d.%m.%Y')
+#     now = datetime.now().strftime('%d.%m.%Y')
 
-    end_data = date - timedelta(days=int(config['payment']["trial_period"])) + timedelta(days=int(config['payment']["days_notice"]))
-    print(end_data)
+#     end_data = date - timedelta(days=int(config['payment']["trial_period"])) + timedelta(days=int(config['payment']["days_notice"]))
+#     print(end_data)
+
+def find_quotes_in_files(directory):
+    for root, dirs, files in os.walk(directory):
+        print(files)
+        for file in files:
+            if file.endswith(".py"):
+                file_path = os.path.join(root, file)
+                with open(file_path, 'r') as file:
+                    lines = file.readlines()
+                    for i, line in enumerate(lines):
+                        new_line = ''
+                        for char in line:
+                            if char == '"':
+                                new_line += "'"
+                            elif char == "'":
+                                new_line += '"'
+                            else:
+                                new_line += char
+                        if "'" in line and '"' in line:
+                            print(f"Both single and double quotes are found in {file_path} line {i+1}: {line.strip()}")
+                        elif "'" in line:
+                            print(f"Single quote found in {file_path} line {i+1}: {line.strip()}")
+                        elif '"' in line:
+                            print(f"Double quote found in {file_path} line {i+1}: {line.strip()}")
+
+# Example call with a specific directory
+find_quotes_in_files(".")
 
 # import requests
 
