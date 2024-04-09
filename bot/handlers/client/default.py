@@ -24,6 +24,11 @@ import time
 
 from WalletPay import WalletPayAPI
 
+buttons = [
+    [types.InlineKeyboardButton(text='exit',callback_data='exit')]
+]
+keyboard_back = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+
 router = Router()
 
 @router.message(Command("start"))

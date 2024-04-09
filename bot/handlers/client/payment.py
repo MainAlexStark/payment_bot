@@ -19,6 +19,11 @@ import time
 
 from WalletPay import WalletPayAPI
 
+buttons = [
+    [types.InlineKeyboardButton(text='exit',callback_data='exit')]
+]
+keyboard_back = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+
 router = Router()
 
 db_client = UserDataBase('DB/users.db')
@@ -250,7 +255,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                                 description=f"Activation of subscription to {callback_data}",
                                 provider_token=config['Sber']['TOKEN'],
                                 currency="usd",
-                                photo_url="https://www.aroged.com/wp-content/uploads/2022/06/Telegram-has-a-premium-subscription.jpg",
+                                photo_url=config["channels"]["channels_img_url"][callback_data],
                                 photo_width=416,
                                 photo_height=234,
                                 photo_size=416,
@@ -266,7 +271,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                                 description=f"Activation of subscription to {callback_data}.\n{config['channels']['channels_description'][callback_data]}",
                                 provider_token=config['Sber']['TOKEN'],
                                 currency="usd",
-                                photo_url="https://www.aroged.com/wp-content/uploads/2022/06/Telegram-has-a-premium-subscription.jpg",
+                                photo_url=config["channels"]["channels_img_url"][callback_data],
                                 photo_width=416,
                                 photo_height=234,
                                 photo_size=416,

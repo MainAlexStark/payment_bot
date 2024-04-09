@@ -85,6 +85,7 @@ class Add_channel(StatesGroup):
     set_cost = State()
     set_decr = State()
     set_id = State()
+    set_img_url = State()
     end = State
 
 @router.message(Command("add_channel"))
@@ -120,6 +121,12 @@ async def cmd_help(message: Message, state: FSMContext):
 @router.message(Add_channel.set_decr)
 async def cmd_help(message: Message, state: FSMContext):
     await state.update_data(desr=message.text)
+    await message.answer(text='Enter img url:')
+    await state.set_state(Add_channel.set_img_url)
+# Обрабатываем картинку
+@router.message(Add_channel.set_img_url)
+async def cmd_help(message: Message, state: FSMContext):
+    await state.update_data(img=message.text)
     await message.answer(text='Enter channel id:')
     await state.set_state(Add_channel.set_id)
 # Обрабатываем id
@@ -138,6 +145,7 @@ async def cmd_help(message: Message, state: FSMContext):
         config['channels']['channels_cost'][channel_data['name']] = channel_data['cost']
         config['channels']['channels_description'][channel_data['name']] = channel_data['desr']
         config['channels']['channels_id'][channel_data['name']] = int(message.text)
+        config['channels']['channels_img_url'][channel_data['name']] = channel_data['img']
 
         file.seek(0)  # Перемещаем указатель в начало файла
         json.dump(config, file)
@@ -173,6 +181,7 @@ async def cmd_del_channel_name(message: Message, state: FSMContext):
         del config['channels']['channels_cost'][message.text]
         del config['channels']['channels_description'][message.text]
         del config['channels']['channels_id'][message.text]
+        del config['channels']['channels_img_url'][message.text]
 
         file.seek(0)  # Перемещаем указатель в начало файла
         json.dump(config, file)

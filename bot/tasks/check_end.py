@@ -76,7 +76,7 @@ async def check(bot):
                 # Баним пользователей
                 if  datetime.strptime(now, '%d.%m.%Y') >= date + timedelta(days=int(config["payment"]["trial_period"])):
                     for channel_name, channel_id in config["channels"]["channels_id"].items():
-                        if db.get_column(user_id, channel_name) is None:
+                        if db.get_column(user_id, channel_name.replace(' ','_')) is None:
                             try:
                                 await bot.ban_chat_member(channel_id, user_id)
                                 print(f'Бан пользователя id={user_id} по причине конца пробного периода')
