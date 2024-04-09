@@ -143,7 +143,7 @@ async def cmd_help(message: Message, state: FSMContext):
         json.dump(config, file)
         file.truncate()  # Обрежьте файл, если новые данные занимают меньше места, чем предыдущие
 
-        await message.answer(text=f'Success:\ncost={channel_data['cost']}\ndescription={channel_data['desr']}\nid={message.text}')
+        await message.answer(text=f"Success:\ncost={channel_data['cost']}\ndescription={channel_data['desr']}\nid={message.text}")
         await state.clear()
 
 class Del_channel(StatesGroup):
