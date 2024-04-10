@@ -32,14 +32,6 @@ async def main():
 
     bot = Bot(config["bot"]["TOKEN"])
 
-    # await bot.unban_chat_member(-1002121864646, 6525546927)
-    # await bot.unban_chat_member(-1002115165052, 6525546927)
-
-    user_channel_status = await bot.get_chat_member(chat_id=-1002121864646, user_id=6525546927)
-    print(user_channel_status.status)
-    user_channel_status = await bot.get_chat_member(chat_id=-1002115165052, user_id=6525546927)
-    print(user_channel_status.status)
-
     storage = MemoryStorage()
 
     # Создание диспетчера

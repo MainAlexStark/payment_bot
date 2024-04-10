@@ -74,12 +74,12 @@ class UserDataBase():
             cur = conn.cursor()
 
             # Создаем таблицу, если она еще не существует
-            # cur.execute('''CREATE TABLE IF NOT EXISTS users (
-            #                 id INTEGER PRIMARY KEY,
-            #                 free_trial BOOLEAN,
-            #                 paid BOOLEAN,
-            #                 start_free_trial TEXT
-            #             )''')
+            cur.execute('''CREATE TABLE IF NOT EXISTS users (
+                            id INTEGER PRIMARY KEY,
+                            free_trial BOOLEAN,
+                            paid BOOLEAN,
+                            start_free_trial TEXT
+                        )''')
 
             # Добавляем информацию в таблицу
             cur.execute(f"INSERT INTO users (id, free_trial , start_free_trial) \
@@ -151,7 +151,7 @@ class UserDataBase():
             cursor.close()
             connection.close()
 
-            return data 
+            return data
         
         except Exception as e:
             print(f'Не удалось получить data\n Ошибка:{e}')

@@ -26,57 +26,63 @@ async def cmd_help(message: Message, state: FSMContext):
 
     if message.chat.type == "private":
 
-        db = UserDataBase('DB/users.db')
+        try:
 
-        # Открываем JSON файл
-        with open(config_path) as file:
-            config = json.load(file)
+            db = UserDataBase('DB/users.db')
 
-        # Подключаемся к базе данных
-        conn = db.connect()
-        cursor = conn.cursor()
+            # Открываем JSON файл
+            with open(config_path) as file:
+                config = json.load(file)
 
-        str_result = 'Your statistics:'
+            # Подключаемся к базе данных
+            conn = db.connect()
+            cursor = conn.cursor()
 
-        # Получаем id всех пользовтелей
-        cursor.execute('SELECT id FROM users')
-        ids = cursor.fetchall()
+            str_result = 'Your statistics:'
 
-        num_users = len(ids)
-        num_free_trial = 0
-        num_not_free_trial = 0
+            # Получаем id всех пользовтелей
+            cursor.execute('SELECT id FROM users')
+            ids = cursor.fetchall()
 
-        channels_sub = {}
-        channels_un_sub = {}
+            num_users = len(ids)
+            num_free_trial = 0
+            num_not_free_trial = 0
 
-        for user in ids:
-            user_id  = user[0]
-            user_data = db.get_data(user_id)
-            if user_data[1] == 1: num_free_trial += 1
-            if user_data[1] == 0: num_not_free_trial += 1
+            channels_sub = {}
+            channels_un_sub = {}
 
-            for channel_name in config['channels']['channels_id'].keys():
-                channel_data = db.get_column(user_id, channel_name.replace(' ','_'))
-                if channel_data is not None: 
-                    if channel_name in channels_sub:
-                        channels_sub[channel_name] += 1
+            for user in ids:
+                user_id  = user[0]
+                user_data = db.get_data(user_id)
+                if user_data[1] == 1: num_free_trial += 1
+                if user_data[1] == 0: num_not_free_trial += 1
+
+                for channel_name in config['channels']['channels_id'].keys():
+                    channel_data = db.get_column(user_id, channel_name.replace(' ','_'))
+                    if channel_data is not None: 
+                        if channel_name in channels_sub:
+                            channels_sub[channel_name] += 1
+                        else:
+                            channels_sub[channel_name] = 1
                     else:
-                        channels_sub[channel_name] = 1
-                else:
-                    if channel_name in channels_un_sub:
-                        channels_un_sub[channel_name] += 1
-                    else:
-                        channels_un_sub[channel_name] = 1
+                        if channel_name in channels_un_sub:
+                            channels_un_sub[channel_name] += 1
+                        else:
+                            channels_un_sub[channel_name] = 1
 
 
-        str_result += f'\nnum_free_trial={num_free_trial}\nnum_not_free_trial={num_not_free_trial}\n\nChannel statistics:'
+            str_result += f'\nnum_free_trial={num_free_trial}\nnum_not_free_trial={num_not_free_trial}\n\nChannel statistics:'
 
-        print(channels_sub)
-        for channel, sub in channels_sub.items():
-            not_sub = channels_un_sub[channel]
-            str_result += f'\n{channel} - {sub} people who bought, {not_sub} people who not bought,'
+            print(channels_sub)
+            for channel, sub in channels_sub.items():
+                not_sub = channels_un_sub[channel]
+                str_result += f'\n{channel} - {sub} people who bought, {not_sub} people who not bought,'
 
-        await message.reply(str_result)
+            await message.reply(str_result)
+
+        except Exception as e:
+            print(e)
+            await message.reply(f'Error:{e}') 
 
 
 
@@ -140,19 +146,24 @@ async def cmd_help(message: Message, state: FSMContext):
 
     # Открываем JSON файл
     with open(config_path, 'r+') as file:
-        config = json.load(file)
+        try:
+            config = json.load(file)
 
-        config['channels']['channels_cost'][channel_data['name']] = channel_data['cost']
-        config['channels']['channels_description'][channel_data['name']] = channel_data['desr']
-        config['channels']['channels_id'][channel_data['name']] = int(message.text)
-        config['channels']['channels_img_url'][channel_data['name']] = channel_data['img']
+            config['channels']['channels_cost'][channel_data['name']] = channel_data['cost']
+            config['channels']['channels_description'][channel_data['name']] = channel_data['desr']
+            config['channels']['channels_id'][channel_data['name']] = int(message.text)
+            config['channels']['channels_img_url'][channel_data['name']] = channel_data['img']
 
-        file.seek(0)  # Перемещаем указатель в начало файла
-        json.dump(config, file)
-        file.truncate()  # Обрежьте файл, если новые данные занимают меньше места, чем предыдущие
+            file.seek(0)  # Перемещаем указатель в начало файла
+            json.dump(config, file)
+            file.truncate()  # Обрежьте файл, если новые данные занимают меньше места, чем предыдущие
 
-        await message.answer(text=f"Success:\ncost={channel_data['cost']}\ndescription={channel_data['desr']}\nid={message.text}")
-        await state.clear()
+            await message.answer(text=f"Success:\ncost={channel_data['cost']}\ndescription={channel_data['desr']}\nid={message.text}")
+            await state.clear()
+        except Exception as e:
+            await message.answer(text=f"Error:{e}")
+            await state.clear()
+            print(e)
 
 class Del_channel(StatesGroup):
     set_name = State()
@@ -170,26 +181,31 @@ async def cmd_del_channel(message: Message, state: FSMContext):
 # Обрабатываем имя
 @router.message(Del_channel.set_name)
 async def cmd_del_channel_name(message: Message, state: FSMContext):
-    db_client = UserDataBase('DB/users.db')
+    try:
+        db_client = UserDataBase('DB/users.db')
 
-    db_client.del_column(message.text.replace(' ','_'))
+        db_client.del_column(message.text.replace(' ','_'))
 
-    # Открываем JSON файл
-    with open(config_path, 'r+') as file:
-        config = json.load(file)
+        # Открываем JSON файл
+        with open(config_path, 'r+') as file:
+            config = json.load(file)
 
-        del config['channels']['channels_cost'][message.text]
-        del config['channels']['channels_description'][message.text]
-        del config['channels']['channels_id'][message.text]
-        del config['channels']['channels_img_url'][message.text]
+            del config['channels']['channels_cost'][message.text]
+            del config['channels']['channels_description'][message.text]
+            del config['channels']['channels_id'][message.text]
+            del config['channels']['channels_img_url'][message.text]
 
-        file.seek(0)  # Перемещаем указатель в начало файла
-        json.dump(config, file)
-        file.truncate()  # Обрежьте файл, если новые данные занимают меньше места, чем предыдущие
+            file.seek(0)  # Перемещаем указатель в начало файла
+            json.dump(config, file)
+            file.truncate()  # Обрежьте файл, если новые данные занимают меньше места, чем предыдущие
 
-    await message.answer(text=f'Success: del {message.text}')
+        await message.answer(text=f'Success: del {message.text}')
 
-    await state.clear()
+        await state.clear()
+
+    except Exception as e:
+        print(e)
+        await message.answer(text=f'Error:{e}')
 
 
 class Change_payment(StatesGroup):
