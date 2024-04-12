@@ -85,7 +85,7 @@ async def get_channels_keyboard(bot: Bot, user_id: int, sub: bool) -> types.Inli
                     if num_purchases is not None:
                         num_refferals = db.get_column(user_id=user_id, column='ref_num')
                         if num_refferals is not None:
-                            for i in range(num_refferals):cost*(1-(float(config['payment']['discount'])/100))
+                            for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
                     buttons.append([types.InlineKeyboardButton(text=f"{name} - ${cost} for {subscription_duration} days",
                                                         callback_data=f"pay=name")])
@@ -119,7 +119,7 @@ async def get_not_sub_channels_keyboard(bot: Bot, user_id: int):
             if num_purchases is not None:
                 num_refferals = db.get_column(user_id=user_id, column='ref_num')
                 if num_refferals is not None:
-                    for i in range(num_refferals):cost*(1-(float(config['payment']['discount'])/100))
+                    for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
             buttons.append([types.InlineKeyboardButton(text=f"{name} - ${cost} for {subscription_duration} days",
                                                        callback_data=f"pay={name}")])
@@ -128,9 +128,10 @@ async def get_not_sub_channels_keyboard(bot: Bot, user_id: int):
     if num_purchases is not None:
         num_refferals = db.get_column(user_id=user_id, column='ref_num')
         if num_refferals is not None:
-            for i in range(num_refferals):cost*(1-(float(config['payment']['discount'])/100))
-            
-    buttons.append([types.InlineKeyboardButton(text=f"All channels - {all_cost} fot {subscription_duration} days",callback_data="pay=all")])
+            for i in range(num_refferals):all_cost = float(all_cost)*(1-(float(config['payment']['discount'])/100))
+
+    if all_cost != 0:
+        buttons.append([types.InlineKeyboardButton(text=f"All channels - {all_cost} fot {subscription_duration} days",callback_data="pay=all")])
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)    
 
 greet_kb = types.ReplyKeyboardMarkup(keyboard=[
@@ -209,6 +210,7 @@ async def cmd_my_subscriptions(message: types.Message):
 @router.message(Command("referral_system"))
 async def cmd_referral_system(message: types.Message):
     config = config_client.get()
+    user_id = message.from_user.id
     # Private chat check 
     if message.chat.type == "private":
 
@@ -218,7 +220,10 @@ async def cmd_referral_system(message: types.Message):
 
             user_id = message.from_user.id
             user_num_referals = 0
-            ref = db.get_column(user_id=user_id,column="ref") 
-            if ref is not None:
-                user_num_referals = ref
-            await message.reply(text=f"Your referal: {user_num_referals}\nYour invitation link: <code>{link}{user_id}</code>", parse_mode="HTML")
+            ref_num = db.get_column(user_id=user_id,column="ref_num") 
+            if ref_num is not None:
+                user_num_referals = ref_num
+            await message.reply(text=f"Your referral: {user_num_referals}\nYour invitation link: <code>{link}{user_id}</code>", parse_mode="HTML")
+
+        else:
+            await message.reply(text="Make your first purchase first!")

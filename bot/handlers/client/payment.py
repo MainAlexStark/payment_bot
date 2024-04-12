@@ -59,12 +59,12 @@ async def successful_payment(message: types.Message) -> None:
     num_purchases = db.get_column(user_id=user_id, column='num_purchases')
 
     if num_purchases is not None:
-        referrals = db.get_column(user_id=ref_id, column='num_purchases')
+        referrals = db.get_column(user_id=user_id, column='num_purchases')
         if num_purchases is None: referrals = 0
-        if not db.change_data(user_id=ref_id, column='num_purchases', new_value=num_purchases+1):
+        if not db.change_data(user_id=user_id, column='num_purchases', new_value=num_purchases+1):
             print(f'Error change num_purchases. user_id ={user_id}, num_purchases = {num_purchases}')
     else:
-        if not db.change_data(user_id=ref_id, column='num_purchases', new_value=1):
+        if not db.change_data(user_id=user_id, column='num_purchases', new_value=1):
             print(f'Error change num_purchases. user_id ={user_id}, num_purchases = {num_purchases}')
 
     ref_id = db.get_column(user_id=user_id, column='ref_id')
@@ -92,15 +92,15 @@ async def successful_payment(message: types.Message) -> None:
 
     if message.successful_payment.invoice_payload == 'all':
         buttons = []
-        for name, id in config['channels']['paid'].items():
-            print(f"channel_name={name} ,channel_id={id}, user_id={user_id}")
-            await ai.unban_chat_member(channel_id=id, user_id=user_id)
+        for name, data in config['channels']['paid'].items():
+            channel_id = data['id']
+            await ai.unban_chat_member(channel_id=channel_id, user_id=user_id)
 
             db.change_data(user_id=user_id, column=name.replace(' ','_'), new_value=date_plus_diff_days)
 
-            link = await ai.create_chat_invite_link(id)
+            link = await ai.create_chat_invite_link(channel_id)
 
-            buttons.append([types.InlineKeyboardButton(text=name, url=link.invite_link)])
+            buttons.append([types.InlineKeyboardButton(text=name, url=link)])
 
         keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
@@ -162,7 +162,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
         if num_purchases is not None:
             num_refferals = db.get_column(user_id=user_id, column='ref_num')
             if num_refferals is not None:
-                for i in range(num_refferals):cost*(1-(float(config['payment']['discount'])/100))
+                for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
             
         await callback.bot.send_message(chat_id=user_id, text=f"Your payment is ${cost} for {config["payment"]["subscription_duration"]} days",
                                             reply_markup=keyboard)
@@ -174,27 +174,28 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
 
         if channel_name == 'all':
             cost = 0
-            for name, data in config['channels']['paid'].items(): 
-                is_sub = db.get_column(user_id=user_id, column=name.replace(' ','_'))
-                if is_sub is not None:
-                    cost += float(data['cost'])
+            photo_url = 'https://img.freepik.com/premium-photo/a-pile-of-white-kittens-with-blue-eyes_808092-6239.jpg'
+            payload = 'all'
+            for name, data in config['channels']['paid'].items(): cost += float(data['cost'])
 
         if channel_name in config['channels']['paid'].keys():
             cost = config['channels']['paid'][channel_name]['cost']
+            photo_url = config['channels']['paid'][channel_name]['img']
+            payload = str(config["channels"]["paid"][channel_name]["id"])
 
         num_purchases = db.get_column(user_id=user_id, column='num_purchases')
         if num_purchases is not None:
             num_refferals = db.get_column(user_id=user_id, column='ref_num')
             if num_refferals is not None:
-                for i in range(num_refferals):cost*(1-(float(config['payment']['discount'])/100))
+                for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
         await callback.bot.send_invoice(
                                 callback.from_user.id,
                                 title=channel_name,
-                                description=f'Activation of subscription to {channel_name}.\n{config["channels"]["paid"][channel_name]["description"]}',
+                                description=f'Activation of subscription to {channel_name}.',
                                 provider_token=config['Stripe']['TOKEN'],
                                 currency="usd",
-                                photo_url=config['channels']['paid'][channel_name]['img'],
+                                photo_url=photo_url,
                                 photo_width=416,
                                 photo_height=234,
                                 photo_size=416,
@@ -202,7 +203,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                                 prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]["subscription_duration"])} days',
                                                             amount=int(float(cost)*100))], # Цена в копейках
                                 start_parameter="one-month-subscription",
-                                payload=str(config["channels"]["paid"][channel_name]["id"]))
+                                payload=payload)
         
 
     if callback.data.split('=')[0] == "ton":
@@ -231,7 +232,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
             if num_purchases is not None:
                 num_refferals = db.get_column(user_id=user_id, column='ref_num')
                 if num_refferals is not None:
-                    for i in range(num_refferals):cost*(1-(float(config['payment']['discount'])/100))
+                    for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
 
             order_link = ton_client.get_pay_link(user_id=str(user_id),

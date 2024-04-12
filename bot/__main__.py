@@ -20,7 +20,7 @@ from handlers.client import default, payment
 from ui_commands import set_bot_commands
 
 """ import tasks """
-from tasks import example
+from tasks import check_end
 
 """ OPEN CONFIG """
 file_path = 'data/config.json'
@@ -33,7 +33,7 @@ else:
 """ tasks """
 async def scheduled(bot ,sleep_for):
     while True:
-        await example.check(bot)
+        await check_end.check(bot)
         await asyncio.sleep(sleep_for)
 
 async def main():
