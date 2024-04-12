@@ -31,7 +31,7 @@ if os.path.exists(file_path):
 else:
     raise Exception(f'File {file_path} not found')
 
-""" OPEN STRINGS """
+""" OPEN CONFIG """
 file_path = 'data/config.json'
 if os.path.exists(file_path):
     config_client = Config(file_path)
@@ -79,7 +79,15 @@ async def get_channels_keyboard(bot: Bot, user_id: int, sub: bool) -> types.Inli
                 buttons.append([types.InlineKeyboardButton(text=f'{diff_days} days trial / {name} ({date_plus_subscription_duration})', url=link)])
             else:
                 if not sub:
-                    buttons.append([types.InlineKeyboardButton(text=f"{name} - ${data['cost']} for {subscription_duration} days",
+                    cost = data['cost']
+
+                    num_purchases = db.get_column(user_id=user_id, column='num_purchases')
+                    if num_purchases is not None:
+                        num_refferals = db.get_column(user_id=user_id, column='ref_num')
+                        if num_refferals is not None:
+                            for i in range(num_refferals):cost*(1-(float(config['payment']['discount'])/100))
+
+                    buttons.append([types.InlineKeyboardButton(text=f"{name} - ${cost} for {subscription_duration} days",
                                                         callback_data=f"pay=name")])
         else:
             raise Exception('Error create invite link')
@@ -106,8 +114,21 @@ async def get_not_sub_channels_keyboard(bot: Bot, user_id: int):
             continue
         else:
             all_cost += float(data['cost'])
-            buttons.append([types.InlineKeyboardButton(text=f"{name} - ${data['cost']} for {subscription_duration} days",
+            cost = data['cost']
+            num_purchases = db.get_column(user_id=user_id, column='num_purchases')
+            if num_purchases is not None:
+                num_refferals = db.get_column(user_id=user_id, column='ref_num')
+                if num_refferals is not None:
+                    for i in range(num_refferals):cost*(1-(float(config['payment']['discount'])/100))
+
+            buttons.append([types.InlineKeyboardButton(text=f"{name} - ${cost} for {subscription_duration} days",
                                                        callback_data=f"pay={name}")])
+            
+    num_purchases = db.get_column(user_id=user_id, column='num_purchases')
+    if num_purchases is not None:
+        num_refferals = db.get_column(user_id=user_id, column='ref_num')
+        if num_refferals is not None:
+            for i in range(num_refferals):cost*(1-(float(config['payment']['discount'])/100))
             
     buttons.append([types.InlineKeyboardButton(text=f"All channels - {all_cost} fot {subscription_duration} days",callback_data="pay=all")])
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)    
@@ -191,11 +212,13 @@ async def cmd_referral_system(message: types.Message):
     # Private chat check 
     if message.chat.type == "private":
 
-        link = 'https://t.me/Alex_Stark_bot?start=refid_'
+        if db.get_column(user_id=user_id, column='num_purchases') is not None:
 
-        user_id = message.from_user.id
-        user_num_referals = 0
-        ref = db.get_column(user_id=user_id,column="ref") 
-        if ref is not None:
-            user_num_referals = ref
-        await message.reply(text=f"Your referal: {user_num_referals}\nYour invitation link: <code>{link}{user_id}</code>", parse_mode="HTML")
+            link = 'https://t.me/Alex_Stark_bot?start=refid_'
+
+            user_id = message.from_user.id
+            user_num_referals = 0
+            ref = db.get_column(user_id=user_id,column="ref") 
+            if ref is not None:
+                user_num_referals = ref
+            await message.reply(text=f"Your referal: {user_num_referals}\nYour invitation link: <code>{link}{user_id}</code>", parse_mode="HTML")

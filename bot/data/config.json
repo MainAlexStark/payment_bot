@@ -33,7 +33,8 @@
     "payment": {
         "subscription_duration": "30",
         "free_trial": "14",
-        "days_notice": "2"
+        "days_notice": "2",
+        "discount": "20"
     },
     "admins": [
         684124197
