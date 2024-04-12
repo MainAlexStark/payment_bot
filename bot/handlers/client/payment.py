@@ -58,6 +58,12 @@ async def successful_payment(message: types.Message) -> None:
 
     num_purchases = db.get_column(user_id=user_id, column='num_purchases')
 
+    channel_id = int(message.successful_payment.invoice_payload)
+    channel_name = ''
+
+    for name, data in config['channels']['paid'].items:
+        if str(channel_id) == data['id']: channel_name=name
+
     if num_purchases is not None:
         referrals = db.get_column(user_id=user_id, column='num_purchases')
         if num_purchases is None: referrals = 0
@@ -80,8 +86,16 @@ async def successful_payment(message: types.Message) -> None:
     trial_period = config['payment']['free_trial']
 
     trial_date = db.get_column(user_id=user_id, column='start_date')
+    sub_date = db.get_column(user_id=user_id, column=channel_name.replace(' ','_'))
     if trial_date is not None:
         date = datetime.strptime(trial_date, "%d.%m.%Y")
+        date_plus_subscription_duration = date + timedelta(days=int(trial_period))
+        diff = date_plus_subscription_duration - datetime.now()
+        diff_days = int(str(diff.days))
+        date_plus_diff = date + timedelta(days=diff_days)
+        date_plus_diff_days = date_plus_diff.strftime("%d.%m.%Y")
+    elif sub_date is not None:
+        date = datetime.strptime(sub_date, "%d.%m.%Y")
         date_plus_subscription_duration = date + timedelta(days=int(trial_period))
         diff = date_plus_subscription_duration - datetime.now()
         diff_days = int(str(diff.days))
@@ -108,7 +122,6 @@ async def successful_payment(message: types.Message) -> None:
                             , reply_markup=keyboard)
         
     else:
-        channel_id = int(message.successful_payment.invoice_payload)
         channel_name = ''
 
         for name, data in config['channels']['paid'].items():
@@ -211,6 +224,10 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
         ton_client = TON(api_key=config["WalletPay"]["TOKEN"])
 
         channel_name = callback.data.split('=')[1]
+        channel_id = ''
+
+        for name, data in config['channels']['paid'].items(): 
+            if name == channel_name: channel_id = data['id']
 
         if str(user_id) in orders.storage.keys():
                 await callback.bot.send_message(chat_id=user_id, text=f"You already have payment link")
@@ -218,6 +235,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
             externalId = str(time.time())
 
             if channel_name == 'all':
+                orders.add_element(str(user_id), externalId, 'all', 300)
                 cost = 0
                 for name, data in config['channels']['paid'].items(): 
                     is_sub = db.get_column(user_id=user_id, column=name.replace(' ','_'))
@@ -225,6 +243,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                         cost += float(data['cost'])
 
             if channel_name in config['channels']['paid'].keys():
+                orders.add_element(str(user_id), externalId, channel_id, 300)
                 cost = config['channels']['paid'][channel_name]['cost']
 
             
