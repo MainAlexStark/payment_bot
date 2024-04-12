@@ -1,90 +1,41 @@
-from aiogram import Router, F
-from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext
-from aiogram import types
+from aiogram import Router, F, types
 from aiogram.types import Message
-
+from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.fsm.state import StatesGroup, State
+from aiogram.fsm.context import FSMContext
 
-from strings.en import strings
+import os
 
-from db import UserDataBase
-import strings
-
-import json, os
-
-# Получаем путь к текущему файлу temp.py
-current_path = os.path.abspath(__file__)
-
-# Формируем путь к файлу config.json
-config_path = os.path.join(os.path.dirname(current_path), '../../config.json')
+""" internal imports """
+from db import Config, DataBaseInterface
 
 router = Router()
 
-@router.message(Command("statistics"))
-async def cmd_help(message: Message, state: FSMContext):
+""" OPEN DataBase """
+file_path = 'data/DataBase.db'
+if os.path.exists(file_path):
+    db = DataBaseInterface(file_path, "users")
+else:
+    raise Exception(f'File {file_path} not found')
 
-    if message.chat.type == "private":
+""" OPEN STRINGS """
+file_path = 'data/strings.json'
+if os.path.exists(file_path):
+    strings_client = Config(file_path)
+    strings = strings_client.get()
+else:
+    raise Exception(f'File {file_path} not found')
 
-        try:
+""" OPEN CONFIG """
+file_path = 'data/config.json'
+if os.path.exists(file_path):
+    config_client = Config(file_path)
+else:
+    raise Exception(f'File {file_path} not found')
 
-            db = UserDataBase('DB/users.db')
-
-            # Открываем JSON файл
-            with open(config_path) as file:
-                config = json.load(file)
-
-            # Подключаемся к базе данных
-            conn = db.connect()
-            cursor = conn.cursor()
-
-            str_result = 'Your statistics:'
-
-            # Получаем id всех пользовтелей
-            cursor.execute('SELECT id FROM users')
-            ids = cursor.fetchall()
-
-            num_users = len(ids)
-            num_free_trial = 0
-            num_not_free_trial = 0
-
-            channels_sub = {}
-            channels_un_sub = {}
-
-            for user in ids:
-                user_id  = user[0]
-                user_data = db.get_data(user_id)
-                if user_data[1] == 1: num_free_trial += 1
-                if user_data[1] == 0: num_not_free_trial += 1
-
-                for channel_name in config['channels']['channels_id'].keys():
-                    channel_data = db.get_column(user_id, channel_name.replace(' ','_'))
-                    if channel_data is not None: 
-                        if channel_name in channels_sub:
-                            channels_sub[channel_name] += 1
-                        else:
-                            channels_sub[channel_name] = 1
-                    else:
-                        if channel_name in channels_un_sub:
-                            channels_un_sub[channel_name] += 1
-                        else:
-                            channels_un_sub[channel_name] = 1
-
-
-            str_result += f'\nnum_free_trial={num_free_trial}\nnum_not_free_trial={num_not_free_trial}\n\nChannel statistics:'
-
-            print(channels_sub)
-            for channel, sub in channels_sub.items():
-                not_sub = channels_un_sub[channel]
-                str_result += f'\n{channel} - {sub} people who bought, {not_sub} people who not bought,'
-
-            await message.reply(str_result)
-
-        except Exception as e:
-            print(e)
-            await message.reply(f'Error:{e}') 
-
-
+back_keyboard = types.ReplyKeyboardMarkup(keyboard=[
+    [types.KeyboardButton(text="/exit")]
+],resize_keyboard=True)
 
 class Add_channel(StatesGroup):
     set_name = State()
@@ -96,20 +47,14 @@ class Add_channel(StatesGroup):
 
 @router.message(Command("add_channel"))
 async def cmd_help(message: Message, state: FSMContext):
+    config = config_client.get()
     
     if message.chat.type == "private":
-        db_client = UserDataBase('DB/users.db')
         user_id = message.from_user.id
+        if user_id in config['admins']:
+            await message.answer(text='Enter channel name:')
 
-        # Открываем JSON файл
-        with open(config_path) as file:
-            config = json.load(file)
-
-            if user_id in config['admins']:
-
-                await message.answer(text='Enter channel name:')
-
-                await state.set_state(Add_channel.set_name)
+            await state.set_state(Add_channel.set_name)
 
 # Обрабатываем имя
 @router.message(Add_channel.set_name)
@@ -138,122 +83,127 @@ async def cmd_help(message: Message, state: FSMContext):
 # Обрабатываем id
 @router.message(Add_channel.set_id)
 async def cmd_help(message: Message, state: FSMContext):
+    config = config_client.get()
     user_id = message.from_user.id
-    db_client = UserDataBase('DB/users.db')
     channel_data = await state.get_data()
 
-    db_client.add_column(channel_data['name'].replace(' ','_'), 'TEXT')
+    channel_name = channel_data['name']
 
-    # Открываем JSON файл
-    with open(config_path, 'r+') as file:
-        try:
-            config = json.load(file)
+    res = db.add_column(channel_name.replace(' ','_'), "TEXT")
 
-            config['channels']['channels_cost'][channel_data['name']] = channel_data['cost']
-            config['channels']['channels_description'][channel_data['name']] = channel_data['desr']
-            config['channels']['channels_id'][channel_data['name']] = int(message.text)
-            config['channels']['channels_img_url'][channel_data['name']] = channel_data['img']
+    if res:
+        if channel_name not in config['channels']['paid']:
+            config['channels']['paid'][channel_name] = {}
+            
+        config['channels']['paid'][channel_name]['id'] = message.text
+        config['channels']['paid'][channel_name]['cost'] = channel_data['cost']
+        config['channels']['paid'][channel_name]['description'] = channel_data['desr']
+        config['channels']['paid'][channel_name]['img'] = channel_data['img']
 
-            file.seek(0)  # Перемещаем указатель в начало файла
-            json.dump(config, file)
-            file.truncate()  # Обрежьте файл, если новые данные занимают меньше места, чем предыдущие
+        config_client.post(config)
 
-            await message.answer(text=f"Success:\ncost={channel_data['cost']}\ndescription={channel_data['desr']}\nid={message.text}")
-            await state.clear()
-        except Exception as e:
-            await message.answer(text=f"Error:{e}")
-            await state.clear()
-            print(e)
+        await message.answer("success!")
+        await state.clear()
+    else:
+        await message.reply(text='Error adding channel to database')
+        await state.clear()
 
 class Del_channel(StatesGroup):
     set_name = State()
 
+
 @router.message(Command("del_channel"))
 async def cmd_del_channel(message: Message, state: FSMContext):
-    db_client = UserDataBase('DB/users.db')
+    config = config_client.get()
 
     if message.chat.type == "private":
 
-        await state.set_state(Del_channel.set_name)
+        if message.from_user.id in config['admins']:
+            channels = ''
+            for name in config['channels']['paid'].keys():
+                channels += f'\n{name}'
 
-        await message.answer(text='Enter name channel')
+            await state.set_state(Del_channel.set_name)
+
+            await message.answer(text=f"Enter name channel{channels}")
 
 # Обрабатываем имя
 @router.message(Del_channel.set_name)
 async def cmd_del_channel_name(message: Message, state: FSMContext):
+    config = config_client.get()
     try:
-        db_client = UserDataBase('DB/users.db')
+        res = db.del_column(message.text.replace(' ','_'))
 
-        db_client.del_column(message.text.replace(' ','_'))
-
-        # Открываем JSON файл
-        with open(config_path, 'r+') as file:
-            config = json.load(file)
-
-            del config['channels']['channels_cost'][message.text]
-            del config['channels']['channels_description'][message.text]
-            del config['channels']['channels_id'][message.text]
-            del config['channels']['channels_img_url'][message.text]
-
-            file.seek(0)  # Перемещаем указатель в начало файла
-            json.dump(config, file)
-            file.truncate()  # Обрежьте файл, если новые данные занимают меньше места, чем предыдущие
-
-        await message.answer(text=f'Success: del {message.text}')
-
-        await state.clear()
+        if res:
+            del config['channels']['paid'][message.text]
+            config_client.post(config)
+            await message.answer(text='succes!')
+        else:
+            await message.reply("Error when deleting from database")
 
     except Exception as e:
         print(e)
-        await message.answer(text=f'Error:{e}')
+        await message.reply(f"Error del channel. Error: {e}")
 
 
-class Change_payment(StatesGroup):
+
+class Change_channel_data(StatesGroup):
     set_name = State()
-    set_value = State()
+    set_data_name = State()
+    set_new_value = State()
 
-@router.message(Command("change_payment_settings"))
-async def cmd_del_channel(message: Message, state: FSMContext):
-    db_client = UserDataBase('DB/users.db')
+@router.message(Command("change_channel_data"))
+async def cmd_change_channel_data(message: Message, state: FSMContext):
+    config = config_client.get()
 
     if message.chat.type == "private":
 
-        # Открываем JSON файл
-        with open(config_path, 'r+') as file:
-            config = json.load(file)
+        if message.from_user.id in config['admins']:
 
-            await message.answer(text=str(config['payment']))
+            channels = ''
+            for name in config['channels']['paid'].keys():
+                channels += f'\n{name}'
 
-        await state.set_state(Change_payment.set_name)
+            await state.set_state(Change_channel_data.set_name)
 
-        await message.answer(text='Enter key')
+            await message.answer(text=f"Enter name channel{channels}")
 
 
-
-@router.message(Change_payment.set_name)
-async def cmd_del_channel(message: Message, state: FSMContext):
-    db_client = UserDataBase('DB/users.db')
+@router.message(Change_channel_data.set_name)
+async def cmd_change_channel_data(message: Message, state: FSMContext):
+    config = config_client.get()
     await state.update_data(name=message.text)
 
-    await message.answer(text='Enter value')
-    
-    await state.set_state(Change_payment.set_value)
+    data_names = ''
+    for name in config['channels']['paid'][message.text].keys():
+        data_names += f'\n{name}'
+
+    await message.answer(text=f'Enter data name:\n{data_names}')
+    await state.set_state(Change_channel_data.set_data_name)
+
+@router.message(Change_channel_data.set_data_name)
+async def cmd_help(message: Message, state: FSMContext):
+    await state.update_data(data_name=message.text)
+    await message.answer(text='Enter new value:')
+    await state.set_state(Change_channel_data.set_new_value)
 
 
-@router.message(Change_payment.set_value)
-async def cmd_del_channel(message: Message, state: FSMContext):
-    db_client = UserDataBase('DB/users.db')
-    data = await state.get_data()
+@router.message(Change_channel_data.set_new_value)
+async def cmd_help(message: Message, state: FSMContext):
+    try:
+        config = config_client.get()
+        channel_data = await state.get_data()
 
-    with open(config_path, 'r+') as file:
-        config = json.load(file)
+        channel_name = channel_data['name']
+        data_name = channel_data['data_name']
+        new_value = message.text
 
-        config['payment'][data['name']] = message.text
+        config['channels']['paid'][channel_name][data_name] = new_value
 
-        file.seek(0)  # Перемещаем указатель в начало файла
-        json.dump(config, file)
-        file.truncate()  # Обрежьте файл, если новые данные занимают меньше места, чем предыдущие
+        config_client.post(config)
 
-        await message.answer(text='Success')
-    
-    await state.clear()
+        await message.answer(f'Successfully')
+
+    except Exception as e:
+        print(f'Error change channel data(config). Error: {e}')
+        await message.answer(f'An error occurred. Error: {e}')

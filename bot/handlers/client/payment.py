@@ -1,282 +1,209 @@
-from aiogram import Router
-from aiogram.fsm.context import FSMContext
+""" third party imports """
+import os
+
+from aiogram import Router, F, types
+from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.types import Message, CallbackQuery, ContentType
+from aiogram.fsm.context import FSMContext
 
-from aiogram.fsm.state import StatesGroup, State
-
-from aiogram import types, F, Bot
+from aiogram import Bot, Dispatcher
+import time
 
 from datetime import datetime, timedelta
 
+import re
 
-import os,json, requests
-
-from db import UserDataBase
+""" internal imports """
+from db import Config, DataBaseInterface
+from aiogram_interface import AiogramInterface
 from payments.ton import TON
-
 from payments.orders import orders
-import time
-
-from WalletPay import WalletPayAPI
-
-buttons = [
-    [types.InlineKeyboardButton(text='exit',callback_data='exit')]
-]
-keyboard_back = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
 router = Router()
 
-db_client = UserDataBase('DB/users.db')
+""" OPEN DataBase """
+file_path = 'data/DataBase.db'
+if os.path.exists(file_path):
+    db = DataBaseInterface(file_path, "users")
+else:
+    raise Exception(f'File {file_path} not found')
+
+""" OPEN STRINGS """
+file_path = 'data/strings.json'
+if os.path.exists(file_path):
+    strings_client = Config(file_path)
+    strings = strings_client.get()
+else:
+    raise Exception(f'File {file_path} not found')
+
+""" OPEN STRINGS """
+file_path = 'data/config.json'
+if os.path.exists(file_path):
+    config_client = Config(file_path)
+else:
+    raise Exception(f'File {file_path} not found')
+
 
 @router.pre_checkout_query(lambda query: True)
 async def pre_checkout_query(pre_checkout_q: types.PreCheckoutQuery) -> None:
     await pre_checkout_q.answer(ok=True)
 
-
 @router.message(F.content_type == ContentType.SUCCESSFUL_PAYMENT)
 async def successful_payment(message: types.Message) -> None:
+    print('SUCCESSFUL_PAYMENT DEBUG')
 
-    # Получаем путь к текущему файлу temp.py
-    current_path = os.path.abspath(__file__)
-
-    # Формируем путь к файлу config.json
-    config_path = os.path.join(os.path.dirname(current_path), '../../config.json')
-
+    config = config_client.get()
+    ai = AiogramInterface(message.bot)
     user_id = message.from_user.id
 
-    if message.successful_payment.invoice_payload == 'all':
-        # Открываем JSON файл
-        with open(config_path) as file:
-            config = json.load(file)
-            buttons = []
-            # Получаем текущую дату
-            current_date = datetime.now().strftime("%d.%m.%Y")
-            for channel_name, channel_id in config['channels']['channels_id'].items():
+    trial_period = config['payment']['free_trial']
 
-                # Разбан пользователя
-                await message.bot.unban_chat_member(channel_id, user_id)
-
-                # Вводим изменения в базу данных
-                db_client.change_data(user_id, channel_name.replace(' ','_'), current_date)
-                
-                link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
-
-                # Добавляем ссылки в клавиатуру
-                buttons.append([types.InlineKeyboardButton(text=f'{channel_name}', url=link.invite_link)])
-
-            # Создаем клавиатуру с каналами, на которые нет подписки
-            start_keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
-
-            await message.answer(f'Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
-                            , reply_markup=start_keyboard)
-            
+    trial_date = db.get_column(user_id=user_id, column='start_date')
+    if trial_date is not None:
+        date = datetime.strptime(trial_date, "%d.%m.%Y")
+        date_plus_subscription_duration = date + timedelta(days=int(trial_period))
+        diff = date_plus_subscription_duration - datetime.now()
+        diff_days = int(str(diff.days))
+        date_plus_diff = date + timedelta(days=diff_days)
+        date_plus_diff_days = date_plus_diff.strftime("%d.%m.%Y")
     else:
+        date_plus_diff_days = datetime.now().strftime("%d.%m.%Y")
 
-        channel_id = int(message.successful_payment.invoice_payload)
-        channel_name = ''
-
-        # Открываем JSON файл
-        with open(config_path) as file:
-            config = json.load(file)
-
-            for key, value in config['channels']['channels_id'].items():
-                if value == channel_id:
-                    channel_name = key
-
+    if message.successful_payment.invoice_payload == 'all':
         buttons = []
+        for name, id in config['channels']['paid'].items():
+            print(f"channel_name={name} ,channel_id={id}, user_id={user_id}")
+            await ai.unban_chat_member(channel_id=id, user_id=user_id)
 
-        link = await message.bot.create_chat_invite_link(channel_id, member_limit=1)
+            db.change_data(user_id=user_id, column=name.replace(' ','_'), new_value=date_plus_diff_days)
 
-        # Добавляем ссылки в клавиатуру
-        buttons.append([types.InlineKeyboardButton(text=f'{channel_name}', url=link.invite_link)])
+            link = await ai.create_chat_invite_link(id)
 
-        # Создаем клавиатуру с каналами, на которые нет подписки
-        start_keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
-
-        # Разбан пользователя
-        await message.bot.unban_chat_member(channel_id, user_id)
-
-        # Вводим изменения в базу данных
-        # Получаем текущую дату
-        current_date = datetime.now().strftime("%d.%m.%Y")
-
-        db_client.change_data(user_id, channel_name.replace(' ','_'), current_date)
-
-        await message.answer(f'Payment for the {channel_name} channel was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
-                            , reply_markup=start_keyboard)
-
-@router.callback_query()
-async def general_start(callback: CallbackQuery, state: FSMContext):
-
-    user_name = callback.from_user.first_name
-    user_id = callback.from_user.id
-
-    # Получаем путь к текущему файлу temp.py
-    current_path = os.path.abspath(__file__)
-
-    # Формируем путь к файлу config.json
-    config_path = os.path.join(os.path.dirname(current_path), '../../config.json')
-
-    if callback.data.split('=')[0] == "pay":
-    
-        callback_data = callback.data.split('=')[1]
-
-        buttons = [
-            [types.InlineKeyboardButton(text='Pay with card using Stripe',callback_data=f'stripe={callback_data}')],
-            [types.InlineKeyboardButton(text='Pay with card or crypto using TON Pay',callback_data=f'ton={callback_data}')],
-            #[types.InlineKeyboardButton(text='Pay with card using SBER',callback_data=f'sber={callback_data}')],
-        ]
+            buttons.append([types.InlineKeyboardButton(text=name, url=link.invite_link)])
 
         keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
-        # Открываем JSON файл
-        with open(config_path) as file:
-            config = json.load(file)
+        await message.answer(f'Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
+                            , reply_markup=keyboard)
+        
+    else:
+        channel_id = int(message.successful_payment.invoice_payload)
+        channel_name = ''
 
-            if callback_data == 'all':
-                all_cost = 0
-                for channel_cost in config["channels"]["channels_cost"].values(): all_cost += int(channel_cost)
+        for name, data in config['channels']['paid'].items():
+                id = data['id']
+                if id == str(channel_id):
+                    channel_name = name
 
-                wallet = config["payment"]["pay_wallet"]
-                dur = config["payment"]["subscription_duration"]
-                await callback.bot.send_message(chat_id=user_id, text=f"Your payment is {wallet}{all_cost} for {dur} days", reply_markup=keyboard)
+        buttons = []
 
-            if callback_data in config["channels"]["channels_cost"].keys():
-                cost = config["channels"]["channels_cost"][callback_data]
-                wallet = config["payment"]["pay_wallet"]
-                dur = config["payment"]["subscription_duration"]
+        await ai.unban_chat_member(channel_id=channel_id, user_id=user_id)
 
-                await callback.bot.send_message(chat_id=user_id, text=f"Your payment is {wallet}{cost} for {dur} days", reply_markup=keyboard)
+        link = await ai.create_chat_invite_link(channel_id)
 
-    if callback.data.split('=')[0] == "ton":
+        db.change_data(user_id=user_id, column=channel_name.replace(' ','_'), new_value=date_plus_diff_days)
 
-        callback_data = callback.data.split('=')[1]        
+        keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
+            [types.InlineKeyboardButton(text=channel_name, url=link)]
+        ])
 
-        # Открываем JSON файл
-        with open(config_path) as file:
-            config = json.load(file)
-
-            # Initialize the API client
-            ton_client = TON(api_key=config["WalletPay"]["TOKEN"])
-            # Initialize the API client
-            api = WalletPayAPI(api_key=config["WalletPay"]["TOKEN"])
-
-            if str(user_id) in orders.storage.keys():
-                await callback.bot.send_message(chat_id=user_id, text=f"You already have payment link")
-            else:
-                externalId = str(time.time())
-
-                if callback_data == all:
-                    all_cost = 0
-                    orders.add_element(str(user_id), externalId, 'all', 300)  # Добавляем элемент, который удалится через 300 секунд
-                    for channel_cost in config["channels"]["channels_cost"].values(): all_cost += int(channel_cost)
-                    order_link = ton_client.get_pay_link(user_id=str(user_id),
-                                                            amount=str(all_cost),
-                                                            description=f'Payment for subscription to {callback_data} channel',
-                                                            bot_url=config['bot']["url"],
-                                                            externalId=externalId)
-                else:
-                    orders.add_element(str(user_id), externalId, str(config['channels']['channels_id'][callback_data]), 300)  # Добавляем элемент, который удалится через 300 секунд
-                    order_link = ton_client.get_pay_link(user_id=str(user_id),
-                                                            amount=config["channels"]['channels_cost'][callback_data],
-                                                            description=f'Payment for subscription to {callback_data} channel',
-                                                            bot_url=config['bot']["url"],
-                                                            externalId=externalId)
-
-                if len(order_link) > 0: 
-                    await callback.bot.send_message(chat_id=user_id, text=f"Your payment link: {order_link}. It will be valid for 5 minutes")
-                else:
-                    print('Ошибка при создании сссылки для оплаты WalletPay')
+        await message.answer(f'Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
+                            , reply_markup=keyboard)
+        
 
 
-        #print(api.get_order_preview(externalId))
 
+
+
+@router.callback_query()
+async def general_start(callback: CallbackQuery, state: FSMContext):
+    config = config_client.get()
+    user_id = callback.from_user.id
+
+    if callback.data.split('=')[0] == "pay":
+
+        channel_name = callback.data.split('=')[1]
+
+        keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
+            [types.InlineKeyboardButton(text=f"Pay with card using Stripe", callback_data=f"stripe={channel_name}")],
+            [types.InlineKeyboardButton(text=f"Pay with card or crypto using TON Pay", callback_data=f"ton={channel_name}")],
+        ])
+
+        if channel_name == 'all':
+            all_cost = 0
+            for name, data in config['channels']['paid'].items(): all_cost += float(data['cost'])
+
+            await callback.bot.send_message(chat_id=user_id, text=f"Your payment is ${all_cost} for {config["payment"]["subscription_duration"]} days",
+                                            reply_markup=keyboard)
+            
+        # If pay one channel
+        if channel_name in config['channels']['paid'].keys():
+            cost = config['channels']['paid'][channel_name]['cost']
+
+            await callback.bot.send_message(chat_id=user_id, text=f"Your payment is ${cost} for {config["payment"]["subscription_duration"]} days",
+                                            reply_markup=keyboard)
+            
 
     if callback.data.split('=')[0] == "stripe":
 
-        callback_data = callback.data.split('=')[1]
+        channel_name = callback.data.split('=')[1]
 
-        # Открываем JSON файл
-        with open(config_path) as file:
-            config = json.load(file)
+        if channel_name == 'all':
+            cost = 0
+            for name, data in config['channels']['paid'].items(): 
+                is_sub = db.get_column(user_id=user_id, column=name.replace(' ','_'))
+                if is_sub is not None:
+                    cost += float(data['cost'])
 
-            if callback_data == 'all':
-                all_cost = 0
-                for channel_cost in config["channels"]["channels_cost"].values(): all_cost += int(channel_cost)
-                await callback.bot.send_invoice(
+        if channel_name in config['channels']['paid'].keys():
+            cost = config['channels']['paid'][channel_name]['cost']
+
+        await callback.bot.send_invoice(
                                 callback.from_user.id,
-                                title=callback_data,
-                                description=f"Activation of subscription to {callback_data}",
+                                title=channel_name,
+                                description=f'Activation of subscription to {channel_name}.\n{config["channels"]["paid"][channel_name]["description"]}',
                                 provider_token=config['Stripe']['TOKEN'],
                                 currency="usd",
-                                photo_url="https://www.aroged.com/wp-content/uploads/2022/06/Telegram-has-a-premium-subscription.jpg",
+                                photo_url=config['channels']['paid'][channel_name]['img'],
                                 photo_width=416,
                                 photo_height=234,
                                 photo_size=416,
                                 is_flexible=False,
                                 prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]["subscription_duration"])} days',
-                                                            amount=int(float(all_cost)*100))], # Цена в копейках
+                                                            amount=int(float(cost)*100))], # Цена в копейках
                                 start_parameter="one-month-subscription",
-                                payload='all')
+                                payload=str(config["channels"]["paid"][channel_name]["id"]))
+        
+
+    if callback.data.split('=')[0] == "ton":
+
+        ton_client = TON(api_key=config["WalletPay"]["TOKEN"])
+
+        channel_name = callback.data.split('=')[1]
+
+        if str(user_id) in orders.storage.keys():
+                await callback.bot.send_message(chat_id=user_id, text=f"You already have payment link")
+        else:
+            externalId = str(time.time())
+
+            if channel_name == 'all':
+                cost = 0
+                for name, data in config['channels']['paid'].items(): 
+                    is_sub = db.get_column(user_id=user_id, column=name.replace(' ','_'))
+                    if is_sub is not None:
+                        cost += float(data['cost'])
+
+            if channel_name in config['channels']['paid'].keys():
+                cost = config['channels']['paid'][channel_name]['cost']
+
+
+            order_link = ton_client.get_pay_link(user_id=str(user_id),
+                                                            amount=str(cost),
+                                                            description=f'Payment for subscription to {channel_name} channel',
+                                                            bot_url=config['bot']["url"],
+                                                            externalId=externalId)
+            
+            if len(order_link) > 0:
+                await callback.bot.send_message(chat_id=user_id, text=f"Your payment link: {order_link}. It will be valid for 5 minutes")
             else:
-                await callback.bot.send_invoice(
-                                callback.from_user.id,
-                                title=callback_data,
-                                description=f'Activation of subscription to {callback_data}.\n{config["channels"]["channels_description"][callback_data]}',
-                                provider_token=config['Stripe']['TOKEN'],
-                                currency="usd",
-                                photo_url="https://www.aroged.com/wp-content/uploads/2022/06/Telegram-has-a-premium-subscription.jpg",
-                                photo_width=416,
-                                photo_height=234,
-                                photo_size=416,
-                                is_flexible=False,
-                                prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]["subscription_duration"])} days',
-                                                            amount=int(float(config['channels']['channels_cost'][callback_data])*100))], # Цена в копейках
-                                start_parameter="one-month-subscription",
-                                payload=str(config['channels']['channels_id'][callback_data]))
-                
-
-
-
-    if callback.data.split('=')[0] == "sber":
-
-        callback_data = callback.data.split('=')[1]
-
-        # Открываем JSON файл
-        with open(config_path) as file:
-            config = json.load(file)
-
-            if callback_data == 'all':
-                all_cost = 0
-                for channel_cost in config["channels"]["channels_cost"].values(): all_cost += int(channel_cost)
-                await callback.bot.send_invoice(
-                                callback.from_user.id,
-                                title=callback_data,
-                                description=f"Activation of subscription to {callback_data}",
-                                provider_token=config['Sber']['TOKEN'],
-                                currency="usd",
-                                photo_url=config["channels"]["channels_img_url"][callback_data],
-                                photo_width=416,
-                                photo_height=234,
-                                photo_size=416,
-                                is_flexible=False,
-                                prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]["subscription_duration"])} days',
-                                                            amount=int(float(all_cost)*100))], # Цена в копейках
-                                start_parameter="one-month-subscription",
-                                payload='all')
-            else:
-                await callback.bot.send_invoice(
-                                callback.from_user.id,
-                                title=callback_data,
-                                description=f"Activation of subscription to {callback_data}.\n{config['channels']['channels_description'][callback_data]}",
-                                provider_token=config['Sber']['TOKEN'],
-                                currency="usd",
-                                photo_url=config["channels"]["channels_img_url"][callback_data],
-                                photo_width=416,
-                                photo_height=234,
-                                photo_size=416,
-                                is_flexible=False,
-                                prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]["subscription_duration"])} days',
-                                                            amount=int(float(config['channels']['channels_cost'][callback_data])*100))], # Цена в копейках
-                                start_parameter="one-month-subscription",
-                                payload=str(config['channels']['channels_id'][callback_data]))
+                await callback.bot.send_message(chat_id=user_id, text=f"Oops, there was a mistake. Try a different payment method, or try again later.")

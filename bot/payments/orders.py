@@ -25,4 +25,3 @@ class OrdersStorage:
 
 # Пример использования
 orders = OrdersStorage()
-

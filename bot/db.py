@@ -1,214 +1,185 @@
 import sqlite3
-import datetime
+from datetime import datetime, timedelta
+import pandas as pd
 
-class UserDataBase():
-    def __init__(self, file_name) -> None:
-        self.file_name = file_name
+import os
+import json
 
-    def connect(self):
-        try:
-            # Соединение с базой данных
-            conn = sqlite3.connect(self.file_name)
-            return conn
-        except Exception as e:
-            print(f'Ошибка при подключении к {self.file_name}\n Ошибка: {e}')
+class DataBase():
+    def __init__(self, file_path: str) -> None:
+        self._file_path = file_path
 
-
-    def add_column(self, column_name: str, type: str):
-        conn = self.connect()
+    def _connect(self) -> None:
+        conn = sqlite3.connect(self._file_path)
+        return conn
+    
+    def execute(self, command: str):
+        conn = self._connect()
         cursor = conn.cursor()
 
-        # Добавляем столбец 'new_column' в таблицу 'my_table'
-        cursor.execute(f"ALTER TABLE users ADD COLUMN {column_name} {type}")
+        cursor.execute(command)
+        result = cursor.fetchone()
 
         conn.commit()
+        cursor.close()
         conn.close()
 
-    def del_column(self, column_name: str):
-        conn = self.connect()
+        return result
+    
+    def get(self, command: str):
+        conn = self._connect()
         cursor = conn.cursor()
 
-        # Удаляем столбец 'old_column' из таблицы 'my_table'
-        cursor.execute(f"ALTER TABLE users DROP COLUMN {column_name}")
+        cursor.execute(command)
+        result = cursor.fetchall()
 
         conn.commit()
+        cursor.close()
         conn.close()
 
-    def is_user(self, id: int) -> bool:
-        # Соединение с базой данных
-        try:
-            conn = self.connect()
-
-            cursor = conn.cursor()
-
-            # Проверка наличия таблицы "users"
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='users'")
-            if cursor.fetchone() is None:
-                print("Таблица 'users' не найдена")
-                cursor.close()
-                conn.close()
-
-            # Выборка всех значений столбца "id" из таблицы "users"
-            cursor.execute("SELECT id FROM users")
-            results = cursor.fetchall()
-
-            # Закрытие соединения с базой данных
-            cursor.close()
-            conn.close()
-
-            return (id,) in results
-
-        except Exception as e:
-            print(f'Ошибка при получении данных о пользователе в {self.file_name}\n Ошибка:{e}')
-
-    def add_user(self, id: int):
-
-        # Получаем текущую дату
-        current_date = datetime.datetime.now().strftime("%d.%m.%Y")
-
-        try:
-
-            # Создаем подключение к базе данных
-            conn = self.connect()
-
-            cur = conn.cursor()
-
-            # Создаем таблицу, если она еще не существует
-            cur.execute('''CREATE TABLE IF NOT EXISTS users (
-                            id INTEGER PRIMARY KEY,
-                            free_trial BOOLEAN,
-                            paid BOOLEAN,
-                            start_free_trial TEXT
-                        )''')
-
-            # Добавляем информацию в таблицу
-            cur.execute(f"INSERT INTO users (id, free_trial , start_free_trial) \
-                         VALUES ({id}, {True},'{current_date}')")
-            conn.commit()
-
-            # Закрываем подключение
-            conn.close()
-
-            return True
-        
-        except Exception as e:
-
-            print(f'Не удалось добавить пользователя в {self.file_name}\n Ошибка:{e}')
-
-
-    def del_user(self, id:int):
-        conn = self.connect()
-        cursor = conn.cursor()
-
-        column_name = 'id'
-        value = id
-
-        cursor.execute(f"DELETE FROM users WHERE {column_name} = ?", (value,))
-        conn.commit()
-
-        conn.close()
-
-
-    def get_column(self, id: int, column: str):
-        try:
-            # Устанавливаем соединение с базой данных
-            connection = self.connect()
-            cursor = connection.cursor()
-
-            cursor.execute(f"SELECT {column} FROM users WHERE id = ?", (id,))
-            result = cursor.fetchone()
-
-            value = result[0]
-
-            # Закрываем соединение с базой данных
-            cursor.close()
-            connection.close()
-
-            return value
-
-        except Exception as e:
-            print(f'Ошибка при получении значения столбца:{e}')
+        return result
     
 
-    def get_data(self, id: int):
+class DataBaseInterface():
+    def __init__(self, file_path: str, table_name: str) -> None:
+        self._db = DataBase(file_path=file_path)
+        self._table_name = table_name
 
-        try:
-
-            data = {}
-
-            # Устанавливаем соединение с базой данных
-            connection = self.connect()
-            cursor = connection.cursor()
-
-            # Пример значения, которое вам нужно найти
-            desired_value = id  
-
-            # Выполнение SQL запроса
-            cursor.execute("SELECT * FROM users WHERE id = ?", (desired_value,))
-            data = cursor.fetchone()
-
-            # Закрываем соединение с базой данных
-            cursor.close()
-            connection.close()
-
-            return data
-        
-        except Exception as e:
-            print(f'Не удалось получить data\n Ошибка:{e}')
-        
-
-    def change_data(self, id: int, column_name: str, new_value):
-
-        try:
-
-            # Устанавливаем соединение с базой данных
-            connection = self.connect()
-            cursor = connection.cursor()
-
-            # SQL-запрос для поиска значения и выборки второго и третьего столбцов
-            query = f"UPDATE users SET {column_name} = ? WHERE id = ?"
-
-            # Выполняем запрос с выбранным значением
-            cursor.execute(query, (new_value, id,))
-
-            connection.commit()
-
-            # Закрываем соединение с базой данных
-            cursor.close()
-            connection.close()
-
-            return True
-        
-        except Exception as e:
-            print(f'Не удалось изменить таблицу\nОшибка:{e}')
-
-
-
-    #### TEMP
-    def print(self):
-        # Подключаемся к базе данных
-        conn = self.connect()
-        cur = conn.cursor()
-
-        # Запрос для получения информации о столбцах в таблице
-        cur.execute('PRAGMA table_info(users)')
-
-        # Получаем результат запроса
-        columns = cur.fetchall()
-
-        # Выводим названия столбцов
+    def print(self) -> None:
+        columns = self._db.get(f"PRAGMA table_info({self._table_name})")
+        print(columns)
         for column in columns:
             print(column[1])
 
-        # Выполняем запрос к базе данных
-        cur.execute("SELECT * FROM users")
-
-        # Получаем все строки из таблицы
-        rows = cur.fetchall()
-
-        # Выводим все строки
+        rows = self._db.get(f"SELECT * FROM {self._table_name}")
         for row in rows:
             print(row)
 
-        # Закрываем соединение с базой данных
-        conn.close()
+    """ USER """
+    def is_user(self, user_id: int | str) -> bool:
+        command = f"SELECT * FROM {self._table_name} WHERE id = {user_id}"
+        result = self._db.get(command=command)
+        return len(result) > 0
+    
+    def add_user(self, user_id: int | str) -> bool:
+        try:
+            today = datetime.now().strftime("%d.%m.%Y")
+
+            command = f"INSERT INTO {self._table_name} (id, start_date) \
+                        VALUES ({user_id}, '{today}')"
+            self._db.execute(command=command)
+
+            return True
+
+        except Exception as e:
+            print(e)
+            return False
+
+    def del_user(self, user_id: int | str) -> bool:
+        try:
+            command = f"DELETE FROM {self._table_name} WHERE id = {user_id}"
+            self._db.execute(command=command)
+
+            return True
+
+        except Exception as e:
+            print(e)
+            return False
+        
+    def get_users(self) -> list:
+        ids = []
+
+        command = f"SELECT id FROM {self._table_name}"
+        result = self._db.execute(command=command)
+
+        for id in result: ids.append(id)
+
+        return ids
+        
+    """ COLUMN """
+    def get_column(self, user_id: int | str, column: str):
+        try:
+            command = f"SELECT {column} FROM {self._table_name} WHERE id = {user_id}"
+            return self._db.execute(command=command)[0]
+        except Exception as e:
+            print(f"Error get column value. Error: {e}\ncolumn={column}, user_id={user_id}")
+    
+    def add_column(self, column: str, type: str) -> bool:
+        try:
+            command = f"ALTER TABLE {self._table_name} ADD COLUMN {column} {type}"
+            self._db.execute(command=command)
+
+            return True
+
+        except Exception as e:
+            print(e)
+            return False
+
+    def del_column(self, column: str) -> bool:
+        try:
+            command = f"ALTER TABLE {self._table_name} DROP COLUMN {column}"
+            self._db.execute(command=command)
+
+            return True
+
+        except Exception as e:
+            print(e)
+            return False
+        
+    """ USER DATA"""
+    def get_data(self, user_id: int | str) -> tuple:
+        command = f"SELECT * FROM {self._table_name} WHERE id = {user_id}"
+        return self._db.execute(command=command)
+    
+    def change_data(self, user_id: int | str, column: str, new_value) -> bool:
+        try:
+            print(f"change data. user_id={user_id}, column={column}, new_value={new_value}")
+            if new_value is not None:
+                command = f"UPDATE {self._table_name} SET {column} = '{new_value}' WHERE id = {user_id}"
+            else:
+                command = f"UPDATE {self._table_name} SET {column} = NULL WHERE id = {user_id}"
+            self._db.execute(command=command)
+
+            return True
+
+        except Exception as e:
+            print(e)
+            return False
+
+class Config():
+    def __init__(self, file_path: str) -> None:
+        self._file_path = file_path
+    
+    def get(self) -> dict:
+        with open(self._file_path) as file:
+            return json.load(file)
+        
+    def post(self, data: dict) -> bool:
+        try:
+            with open(self._file_path, 'w') as file:
+                json.dump(data, file, indent=4)
+                file.truncate()
+                return True
+        except Exception as e:
+            print(e)
+            return False
+
+
+""" TEST DataBase """
+file_path = 'data/DataBase.db'
+if os.path.exists(file_path):
+    db = DataBaseInterface(file_path, "users")
+    #print(db.change_data('684124197', 'paid_test_channel_1', None))
+    #db.del_user(684124197)
+    db.print()
+else:
+    raise Exception(f'File {file_path} not found')
+
+""" TEST Config """
+file_path = 'data/config.json'
+if os.path.exists(file_path):
+    config_client = Config(file_path)
+    config = config_client.get()
+    print("CONFIG=",config)
+else:
+    raise Exception(f'File {file_path} not found')

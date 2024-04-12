@@ -1,0 +1,5 @@
+builder = InlineKeyboardBuilder()
+for i in range(15):
+    builder.button(text=f”Кнопка {i}”, callback_data=f”button_{i}”)
+builder.adjust(2)
+await msg.answer(“Текст сообщения”, reply_markup=builder.as_markup())
