@@ -74,6 +74,7 @@ async def check(bot: Bot):
 
 
                     trial_period = config['payment']['free_trial']
+                    sub_period = config['payment']['subscription_duration']
 
                     trial_date = db.get_column(user_id=user_id, column='start_date')
                     sub_date = db.get_column(user_id=user_id, column=channel_name.replace(' ','_'))
@@ -86,7 +87,7 @@ async def check(bot: Bot):
                         date_plus_diff_days = date_plus_diff.strftime("%d.%m.%Y")
                     elif sub_date is not None:
                         date = datetime.strptime(sub_date, "%d.%m.%Y")
-                        date_plus_subscription_duration = date + timedelta(days=int(trial_period))
+                        date_plus_subscription_duration = date + timedelta(days=int(sub_period))
                         diff = date_plus_subscription_duration - datetime.now()
                         diff_days = int(str(diff.days))
                         date_plus_diff = date + timedelta(days=diff_days)
