@@ -41,15 +41,14 @@ async def check(bot: Bot) -> None:
         if free_trial is not None:
             message = f'We value our relationship and would like to inform you that your subscription will end in {config["payment"]["days_notice"]} days'
             message_end = f'We are sorry to have you go. If you decide to get back we will be happy to see you again'
-            date = datetime.strptime(free_trial, '%d.%m.%Y')
 
             keyboard = await get_not_sub_channels_keyboard(bot, user_id=user_id)
 
-            date_obj = datetime.strptime(date, '%d.%m.%Y')
-            date_plus_trial = date_obj + timedelta(days=config['payment']['free_trial'])
+            date_obj = datetime.strptime(free_trial, '%d.%m.%Y')
+            date_plus_trial = date_obj + timedelta(days=int(config['payment']['free_trial']))
             today = datetime.today()
 
-            if date_plus_trial.date() - timedelta(days=config['payment']['days_notice']) == today.date():
+            if date_plus_trial.date() - timedelta(days=int(config['payment']['days_notice'])) == today.date():
                 await bot.send_message(user_id, text=message, reply_markup=keyboard)
 
             if date_plus_trial.date() == today.date():
@@ -69,13 +68,14 @@ async def check(bot: Bot) -> None:
                     message = f'We value our relationship and would like to inform you that your subscription will end in {config["payment"]["days_notice"]} days'
                     message_end = f'We are sorry to have you go. If you decide to get back we will be happy to see you again'
 
-                    if db.get_column(user_id=user_id, column=channel_name.replace(' ','_')) is not None:
+                    channels_date = db.get_column(user_id=user_id, column=channel_name.replace(' ','_'))
+                    if channels_date is not None:
 
-                        date_obj = datetime.strptime(date, '%d.%m.%Y')
-                        date_plus_sub = date_obj + timedelta(days=config['payment']['subscription_duration'])
+                        date_obj = datetime.strptime(channels_date, '%d.%m.%Y')
+                        date_plus_sub = date_obj + timedelta(days=int(config['payment']['subscription_duration']))
                         today = datetime.today()
 
-                        if date_plus_sub.date() - timedelta(days=config['payment']['days_notice']) == today.date():
+                        if date_plus_sub.date() - timedelta(days=int(config['payment']['days_notice'])) == today.date():
                             await bot.send_message(user_id, text=message, reply_markup=keyboard)
 
                         if date_plus_sub.date() == today.date():

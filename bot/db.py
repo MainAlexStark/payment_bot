@@ -169,9 +169,9 @@ class Config():
 file_path = 'data/DataBase.db'
 if os.path.exists(file_path):
     db = DataBaseInterface(file_path, "users")
-    #print(db.change_data('684124197', 'paid_test_channel_1', None))
-    db.del_user('6525546927')
-    # db.del_user('684124197')
+    print(db.change_data(user_id='6525546927', column='start_date', new_value='27.04.2024'))
+    #db.del_user('6525546927')
+    #db.del_user('684124197')
     db.print()
 else:
     raise Exception(f'File {file_path} not found')

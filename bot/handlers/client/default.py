@@ -136,11 +136,12 @@ async def get_not_sub_channels_keyboard(bot: Bot, user_id: int):
 
 greet_kb = types.ReplyKeyboardMarkup(keyboard=[
     [types.KeyboardButton(text="/our_products"), types.KeyboardButton(text="/my_subscriptions")],
-    [types.KeyboardButton(text="/referral_system")]
+    [types.KeyboardButton(text='/to_main'), types.KeyboardButton(text="/referral_system")]
 ],resize_keyboard=True)
 
 
 @router.message(Command("start"))
+@router.message(Command("/to_main"))
 @router.message(CommandStart(
     deep_link=True,
     magic=F.args.regexp(re.compile(r'refid_(\d+)'))

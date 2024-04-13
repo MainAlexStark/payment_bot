@@ -21,6 +21,7 @@ from ui_commands import set_bot_commands
 
 """ import tasks """
 from tasks import check_end
+from tasks import check_paid
 
 """ OPEN CONFIG """
 file_path = 'data/config.json'
@@ -34,6 +35,11 @@ else:
 async def scheduled(bot ,sleep_for):
     while True:
         await check_end.check(bot)
+        await asyncio.sleep(sleep_for)
+
+async def paid_handler(bot, sleep_for):
+    while True:
+        await check_paid.check(bot)
         await asyncio.sleep(sleep_for)
 
 async def main():
@@ -56,7 +62,8 @@ async def main():
     await set_bot_commands(bot)
 
     # Отправьте асинхронную задачу для постоянной проверки окончания подписки или пробного периода на какой либо канал
-    #asyncio.create_task(scheduled(bot, 86400))  # 86400 секунд - это 24 часа
+    asyncio.create_task(scheduled(bot, 86400))  # 86400 секунд - это 24 часа
+    asyncio.create_task(paid_handler(bot, 60))  # Проверяем оплату
 
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
