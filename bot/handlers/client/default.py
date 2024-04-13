@@ -115,7 +115,7 @@ async def get_not_sub_channels_keyboard(bot: Bot, user_id: int):
             continue
         else:
             all_cost += float(data['cost'])
-            cost = data['cost']
+            cost = float(data['cost'])
             num_purchases = db.get_column(user_id=user_id, column='num_purchases')
             if num_purchases is not None:
                 num_refferals = db.get_column(user_id=user_id, column='ref_num')
@@ -177,7 +177,7 @@ async def get_all_paid_keyboard(bot: Bot, user_id: int):
     all_cost = 0
     for name, data in config['channels']['paid'].items():
         id = data['id']
-        cost = data['cost']
+        cost = float(data['cost'])
         all_cost += float(cost)
         subscription_duration = int(config['payment']['subscription_duration'])
         trial_period = int(config['payment']['free_trial'])
