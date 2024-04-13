@@ -191,7 +191,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                 if num_refferals>5:num_refferals=5
                 for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
             
-        await callback.bot.send_message(chat_id=user_id, text=f"Your payment is ${cost} for {config["payment"]["subscription_duration"]} days",
+        await callback.bot.send_message(chat_id=user_id, text=f"Your payment is ${round(cost,2)} for {config["payment"]["subscription_duration"]} days",
                                             reply_markup=keyboard)
             
 
@@ -229,7 +229,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                                 photo_size=416,
                                 is_flexible=False,
                                 prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]["subscription_duration"])} days',
-                                                            amount=int(float(cost)*100))], # Цена в копейках
+                                                            amount=int(float(round(cost,2))*100))], # Цена в копейках
                                 start_parameter="one-month-subscription",
                                 payload=payload)
         
@@ -271,7 +271,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
 
 
             order_link = ton_client.get_pay_link(user_id=str(user_id),
-                                                            amount=str(cost),
+                                                            amount=str(round(cost,2)),
                                                             description=f'Payment for subscription to {channel_name} channel',
                                                             bot_url=config['bot']["url"],
                                                             externalId=externalId)
