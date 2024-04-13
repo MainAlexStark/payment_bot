@@ -47,7 +47,6 @@ class DataBaseInterface():
 
     def print(self) -> None:
         columns = self._db.get(f"PRAGMA table_info({self._table_name})")
-        print(columns)
         for column in columns:
             print(column[1])
 
@@ -90,9 +89,9 @@ class DataBaseInterface():
         ids = []
 
         command = f"SELECT id FROM {self._table_name}"
-        result = self._db.execute(command=command)
+        result = self._db.get(command=command)
 
-        for id in result: ids.append(id)
+        for id in result: ids.append(id[0])
 
         return ids
         
@@ -169,8 +168,8 @@ class Config():
 file_path = 'data/DataBase.db'
 if os.path.exists(file_path):
     db = DataBaseInterface(file_path, "users")
-    print(db.change_data(user_id='6525546927', column='start_date', new_value='27.04.2024'))
-    #db.del_user('6525546927')
+    #print(db.change_data(user_id='1849088118', column='start_date', new_value='01.03.2024'))
+    #print(db.get_users())
     #db.del_user('684124197')
     db.print()
 else:

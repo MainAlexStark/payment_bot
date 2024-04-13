@@ -58,10 +58,10 @@ async def successful_payment(message: types.Message) -> None:
 
     num_purchases = db.get_column(user_id=user_id, column='num_purchases')
 
-    channel_id = int(message.successful_payment.invoice_payload)
+    channel_id = message.successful_payment.invoice_payload
     channel_name = ''
 
-    for name, data in config['channels']['paid'].items:
+    for name, data in config['channels']['paid'].items():
         if str(channel_id) == data['id']: channel_name=name
 
     if num_purchases is not None:
@@ -86,16 +86,8 @@ async def successful_payment(message: types.Message) -> None:
     trial_period = config['payment']['free_trial']
 
     trial_date = db.get_column(user_id=user_id, column='start_date')
-    sub_date = db.get_column(user_id=user_id, column=channel_name.replace(' ','_'))
     if trial_date is not None:
         date = datetime.strptime(trial_date, "%d.%m.%Y")
-        date_plus_subscription_duration = date + timedelta(days=int(trial_period))
-        diff = date_plus_subscription_duration - datetime.now()
-        diff_days = int(str(diff.days))
-        date_plus_diff = date + timedelta(days=diff_days)
-        date_plus_diff_days = date_plus_diff.strftime("%d.%m.%Y")
-    elif sub_date is not None:
-        date = datetime.strptime(sub_date, "%d.%m.%Y")
         date_plus_subscription_duration = date + timedelta(days=int(trial_period))
         diff = date_plus_subscription_duration - datetime.now()
         diff_days = int(str(diff.days))
@@ -109,6 +101,15 @@ async def successful_payment(message: types.Message) -> None:
         for name, data in config['channels']['paid'].items():
             channel_id = data['id']
             await ai.unban_chat_member(channel_id=channel_id, user_id=user_id)
+
+            sub_date = db.get_column(user_id=user_id, column=name.replace(' ','_'))
+            if sub_date is not None:
+                date = datetime.strptime(sub_date, "%d.%m.%Y")
+                date_plus_subscription_duration = date + timedelta(days=int(trial_period))
+                diff = date_plus_subscription_duration - datetime.now()
+                diff_days = int(str(diff.days))
+                date_plus_diff = date + timedelta(days=diff_days)
+                date_plus_diff_days = date_plus_diff.strftime("%d.%m.%Y")
 
             db.change_data(user_id=user_id, column=name.replace(' ','_'), new_value=date_plus_diff_days)
 
@@ -163,18 +164,19 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
             [types.InlineKeyboardButton(text=f"Pay with card or crypto using TON Pay", callback_data=f"ton={channel_name}")],
         ])
 
+        cost = 0
         if channel_name == 'all':
             cost = 0
             for name, data in config['channels']['paid'].items(): cost += float(data['cost'])
-
         # If pay one channel
-        if channel_name in config['channels']['paid'].keys():
+        elif channel_name in config['channels']['paid'].keys():
             cost = config['channels']['paid'][channel_name]['cost']
 
         num_purchases = db.get_column(user_id=user_id, column='num_purchases')
         if num_purchases is not None:
             num_refferals = db.get_column(user_id=user_id, column='ref_num')
             if num_refferals is not None:
+                if num_refferals>5:num_refferals=5
                 for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
             
         await callback.bot.send_message(chat_id=user_id, text=f"Your payment is ${cost} for {config["payment"]["subscription_duration"]} days",
@@ -200,6 +202,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
         if num_purchases is not None:
             num_refferals = db.get_column(user_id=user_id, column='ref_num')
             if num_refferals is not None:
+                if num_refferals>5:num_refferals=5
                 for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
         await callback.bot.send_invoice(
@@ -251,6 +254,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
             if num_purchases is not None:
                 num_refferals = db.get_column(user_id=user_id, column='ref_num')
                 if num_refferals is not None:
+                    if num_refferals>5:num_refferals=5
                     for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
 

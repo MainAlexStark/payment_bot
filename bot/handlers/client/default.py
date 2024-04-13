@@ -85,6 +85,7 @@ async def get_channels_keyboard(bot: Bot, user_id: int, sub: bool) -> types.Inli
                     if num_purchases is not None:
                         num_refferals = db.get_column(user_id=user_id, column='ref_num')
                         if num_refferals is not None:
+                            if num_refferals>5:num_refferals=5
                             for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
                     buttons.append([types.InlineKeyboardButton(text=f"{name} - ${cost} for {subscription_duration} days",
@@ -119,15 +120,76 @@ async def get_not_sub_channels_keyboard(bot: Bot, user_id: int):
             if num_purchases is not None:
                 num_refferals = db.get_column(user_id=user_id, column='ref_num')
                 if num_refferals is not None:
+                    if num_refferals>5:num_refferals=5
                     for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
             buttons.append([types.InlineKeyboardButton(text=f"{name} - ${cost} for {subscription_duration} days",
+                                                       callback_data=f"pay={name}")])
+    if all_cost != 0:
+        buttons.append([types.InlineKeyboardButton(text=f"All channels - {all_cost} fot {subscription_duration} days",callback_data="pay=all")])
+            
+    return types.InlineKeyboardMarkup(inline_keyboard=buttons)  
+
+
+async def get_sub_channels_keyboard(bot: Bot, user_id: int):
+    config = config_client.get()
+    ai = AiogramInterface(bot)
+    buttons = []
+
+    for name, data in config['channels']['paid'].items():
+        id = data['id']
+        subscription_duration = int(config['payment']['subscription_duration'])
+        trial_period = int(config['payment']['free_trial'])
+
+        link = await ai.create_chat_invite_link(id)
+
+        if len(link) > 0:
+            is_sub = db.get_column(user_id=user_id, column=name.replace(' ','_'))
+            is_trial = db.get_column(user_id=user_id, column="start_date")
+
+            # If paid channel
+            if is_sub is not None:
+                date = db.get_column(user_id=user_id, column=name.replace(' ','_'))
+                date = datetime.strptime(date, "%d.%m.%Y")
+                date_plus_subscription_duration = date + timedelta(days=subscription_duration)
+                diff = date_plus_subscription_duration - datetime.now()
+                date_plus_subscription_duration = date_plus_subscription_duration.strftime("%d.%m.%Y")
+                diff_days = str(diff.days)
+                buttons.append([types.InlineKeyboardButton(text=f'{diff_days} days sub / {name} ({date_plus_subscription_duration})', url=link)])
+            # If trai period
+            elif is_trial is not None:
+                date = db.get_column(user_id=user_id, column="start_date")
+                date = datetime.strptime(date, "%d.%m.%Y")
+                date_plus_subscription_duration = date + timedelta(days=trial_period)
+                diff = date_plus_subscription_duration - datetime.now()
+                date_plus_subscription_duration = date_plus_subscription_duration.strftime("%d.%m.%Y")
+                diff_days = str(diff.days)
+                buttons.append([types.InlineKeyboardButton(text=f'{diff_days} days trial / {name} ({date_plus_subscription_duration})', url=link)])
+            
+
+    return types.InlineKeyboardMarkup(inline_keyboard=buttons) 
+
+
+async def get_all_paid_keyboard(bot: Bot, user_id: int):
+    config = config_client.get()
+    ai = AiogramInterface(bot)
+    buttons = []
+    all_cost = 0
+    for name, data in config['channels']['paid'].items():
+        id = data['id']
+        cost = data['cost']
+        all_cost += float(cost)
+        subscription_duration = int(config['payment']['subscription_duration'])
+        trial_period = int(config['payment']['free_trial'])
+
+        buttons.append([types.InlineKeyboardButton(text=f"{name} - ${cost} for {subscription_duration} days",
                                                        callback_data=f"pay={name}")])
             
     num_purchases = db.get_column(user_id=user_id, column='num_purchases')
     if num_purchases is not None:
         num_refferals = db.get_column(user_id=user_id, column='ref_num')
         if num_refferals is not None:
+            if num_refferals>5:num_refferals=5
             for i in range(num_refferals):all_cost = float(all_cost)*(1-(float(config['payment']['discount'])/100))
 
     if all_cost != 0:
@@ -135,13 +197,13 @@ async def get_not_sub_channels_keyboard(bot: Bot, user_id: int):
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)    
 
 greet_kb = types.ReplyKeyboardMarkup(keyboard=[
-    [types.KeyboardButton(text="/our_products"), types.KeyboardButton(text="/my_subscriptions")],
-    [types.KeyboardButton(text='/to_main'), types.KeyboardButton(text="/referral_system")]
+    [types.KeyboardButton(text="/active_subscriptions")],
+    [types.KeyboardButton(text='/our_offerings'), types.KeyboardButton(text="/referral_system")]
 ],resize_keyboard=True)
 
 
 @router.message(Command("start"))
-@router.message(Command("/to_main"))
+@router.message(Command("our_offerings"))
 @router.message(CommandStart(
     deep_link=True,
     magic=F.args.regexp(re.compile(r'refid_(\d+)'))
@@ -154,7 +216,7 @@ async def cmd_start(message: types.Message, command: CommandObject):
         user_id = message.from_user.id
 
         if db.is_user(user_id=user_id):
-            b = await get_not_sub_channels_keyboard(message.bot, user_id)
+            b = await get_all_paid_keyboard(message.bot, user_id)
             await message.answer(text=strings['handlers']['start'],reply_markup=b, disable_web_page_preview=True)
             await message.answer(text=strings['Terms_of_Service'],reply_markup=greet_kb,parse_mode="HTML", disable_web_page_preview=True)
         # If the user is new
@@ -188,17 +250,17 @@ async def cmd_start(message: types.Message, command: CommandObject):
             await message.answer(string)
 
 
-@router.message(Command("our_products"))
-async def cmd_our_products(message: types.Message):
-    config = config_client.get()
-    # Private chat check 
-    if message.chat.type == "private":
-        # Get user id
-        user_id = message.from_user.id
-        channels_keyboard = await get_channels_keyboard(message.bot, user_id=user_id, sub=False)
-        await message.answer(text="Our Projects:",reply_markup=channels_keyboard)
+# @router.message(Command("our_products"))
+# async def cmd_our_products(message: types.Message):
+#     config = config_client.get()
+#     # Private chat check 
+#     if message.chat.type == "private":
+#         # Get user id
+#         user_id = message.from_user.id
+#         channels_keyboard = await get_channels_keyboard(message.bot, user_id=user_id, sub=False)
+#         await message.answer(text="Our Projects:",reply_markup=channels_keyboard)
 
-@router.message(Command("my_subscriptions"))
+@router.message(Command("active_subscriptions"))
 async def cmd_my_subscriptions(message: types.Message):
     config = config_client.get()
     # Private chat check 
@@ -224,7 +286,13 @@ async def cmd_referral_system(message: types.Message):
             ref_num = db.get_column(user_id=user_id,column="ref_num") 
             if ref_num is not None:
                 user_num_referals = ref_num
-            await message.reply(text=f"Your referral: {user_num_referals}\nYour invitation link: <code>{link}{user_id}</code>", parse_mode="HTML")
+
+            message = f"We`re delighted to have you in our small commodity club. We prioritise relationships and offer you the opportunity to invite five trusted professionals.\n \
+                        An invitation entitles the recipient to a {config['payment']['discount']}% lifetime subscription discount. Also, as long as your invitees are members of our club, you will receive a 20% discount on your subscription for each of them!\n   \
+                        Use the link below to extend an invitation: <code>{link}{user_id}</code>\n \
+                        Accepted invitations: {user_num_referals}\n \
+                        Your total discount: [Х]%"
+            await message.reply(text=message, parse_mode="HTML")
 
         else:
             await message.reply(text="Make your first purchase first!")
