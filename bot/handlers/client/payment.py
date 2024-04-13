@@ -132,9 +132,21 @@ async def successful_payment(message: types.Message) -> None:
 
         buttons = []
 
+        sub_period = config['payment']['subscription_duration']
+
         await ai.unban_chat_member(channel_id=channel_id, user_id=user_id)
 
         link = await ai.create_chat_invite_link(channel_id)
+
+        sub_date = db.get_column(user_id=user_id, column=channel_name.replace(' ','_'))
+        if sub_date is not None:
+            date = datetime.strptime(sub_date, "%d.%m.%Y")
+            date_plus_subscription_duration = date + timedelta(days=int(sub_period))
+            diff = date_plus_subscription_duration - datetime.now()
+            diff_days = int(str(diff.days))
+            print(diff_days)
+            date_plus_diff = date + timedelta(days=diff_days)
+            date_plus_diff_days = date_plus_diff.strftime("%d.%m.%Y")
 
         db.change_data(user_id=user_id, column=channel_name.replace(' ','_'), new_value=date_plus_diff_days)
 

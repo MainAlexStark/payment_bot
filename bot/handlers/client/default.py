@@ -126,7 +126,7 @@ async def get_not_sub_channels_keyboard(bot: Bot, user_id: int):
             buttons.append([types.InlineKeyboardButton(text=f"{name} - ${cost} for {subscription_duration} days",
                                                        callback_data=f"pay={name}")])
     if all_cost != 0:
-        buttons.append([types.InlineKeyboardButton(text=f"All channels - {all_cost} fot {subscription_duration} days",callback_data="pay=all")])
+        buttons.append([types.InlineKeyboardButton(text=f"All channels - {all_cost} for {subscription_duration} days",callback_data="pay=all")])
             
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)  
 
@@ -181,6 +181,13 @@ async def get_all_paid_keyboard(bot: Bot, user_id: int):
         all_cost += float(cost)
         subscription_duration = int(config['payment']['subscription_duration'])
         trial_period = int(config['payment']['free_trial'])
+
+        num_purchases = db.get_column(user_id=user_id, column='num_purchases')
+        if num_purchases is not None:
+            num_refferals = db.get_column(user_id=user_id, column='ref_num')
+            if num_refferals is not None:
+                if num_refferals>5:num_refferals=5
+                for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
         buttons.append([types.InlineKeyboardButton(text=f"{name} - ${cost} for {subscription_duration} days",
                                                        callback_data=f"pay={name}")])
@@ -287,12 +294,12 @@ async def cmd_referral_system(message: types.Message):
             if ref_num is not None:
                 user_num_referals = ref_num
 
-            message = f"We`re delighted to have you in our small commodity club. We prioritise relationships and offer you the opportunity to invite five trusted professionals.\n \
-                        An invitation entitles the recipient to a {config['payment']['discount']}% lifetime subscription discount. Also, as long as your invitees are members of our club, you will receive a 20% discount on your subscription for each of them!\n   \
-                        Use the link below to extend an invitation: <code>{link}{user_id}</code>\n \
-                        Accepted invitations: {user_num_referals}\n \
-                        Your total discount: [Х]%"
-            await message.reply(text=message, parse_mode="HTML")
+            msg = f"We`re delighted to have you in our small commodity club. We prioritise relationships and offer you the opportunity to invite five trusted professionals.\n\
+An invitation entitles the recipient to a {config['payment']['discount']}% lifetime subscription discount. Also, as long as your invitees are members of our club, you will receive a 20% discount on your subscription for each of them!\n\
+Use the link below to extend an invitation: <code>{link}{user_id}</code>\n\
+Accepted invitations: {user_num_referals}\n\
+Your total discount: [Х]%"
+            await message.reply(text=msg, parse_mode="HTML")
 
         else:
             await message.reply(text="Make your first purchase first!")

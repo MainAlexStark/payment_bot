@@ -169,7 +169,7 @@ file_path = 'data/DataBase.db'
 if os.path.exists(file_path):
     db = DataBaseInterface(file_path, "users")
     #print(db.change_data(user_id='1849088118', column='start_date', new_value='01.03.2024'))
-    #print(db.get_users())
+    #print(db.del_user(6525546927))
     #db.del_user('684124197')
     db.print()
 else:
