@@ -55,7 +55,6 @@ async def successful_payment(message: types.Message) -> None:
     config = config_client.get()
     ai = AiogramInterface(message.bot)
     user_id = message.from_user.id
-    db = DataBaseInterface(file_path, "users")
 
     num_purchases = db.get_column(user_id=user_id, column='num_purchases')
 
