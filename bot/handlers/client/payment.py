@@ -55,6 +55,7 @@ async def successful_payment(message: types.Message) -> None:
     config = config_client.get()
     ai = AiogramInterface(message.bot)
     user_id = message.from_user.id
+    db = DataBaseInterface(file_path, "users")
 
     num_purchases = db.get_column(user_id=user_id, column='num_purchases')
 
@@ -74,16 +75,19 @@ async def successful_payment(message: types.Message) -> None:
             print(f'Error change num_purchases. user_id ={user_id}, num_purchases = {num_purchases}')
 
     ref_id = db.get_column(user_id=user_id, column='ref_id')
+    num_purchases = db.get_column(user_id=user_id, column='num_purchases')
 
-    if ref_id is not None:
+    if ref_id is not None and num_purchases==1:
         referrals = db.get_column(user_id=ref_id, column='ref_num')
         if referrals is None: referrals = 0
+        print(f"ref_id={ref_id}, referrals={referrals}, num_purchases={num_purchases}")
         if not db.change_data(user_id=ref_id, column='ref_num', new_value=referrals+1):
             print(f'Error change num referrals. user_id ={user_id}, num referrals = {referrals}')
         
 
 
     trial_period = config['payment']['free_trial']
+    sub_period = config['payment']['subscription_duration']
 
     trial_date = db.get_column(user_id=user_id, column='start_date')
     if trial_date is not None:
@@ -105,7 +109,7 @@ async def successful_payment(message: types.Message) -> None:
             sub_date = db.get_column(user_id=user_id, column=name.replace(' ','_'))
             if sub_date is not None:
                 date = datetime.strptime(sub_date, "%d.%m.%Y")
-                date_plus_subscription_duration = date + timedelta(days=int(trial_period))
+                date_plus_subscription_duration = date + timedelta(days=int(sub_period))
                 diff = date_plus_subscription_duration - datetime.now()
                 diff_days = int(str(diff.days))
                 date_plus_diff = date + timedelta(days=diff_days)
@@ -191,7 +195,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                 if num_refferals>5:num_refferals=5
                 for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
             
-        await callback.bot.send_message(chat_id=user_id, text=f"Your payment is ${round(cost,2)} for {config["payment"]["subscription_duration"]} days",
+        await callback.bot.send_message(chat_id=user_id, text=f"Your payment is ${round(float(cost),2)} for {config["payment"]["subscription_duration"]} days",
                                             reply_markup=keyboard)
             
 
@@ -230,7 +234,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                                 photo_size=416,
                                 is_flexible=False,
                                 prices=[types.LabeledPrice(label=f'Subscribe to the {str(config["payment"]["subscription_duration"])} days',
-                                                            amount=int(float(round(cost,2))*100))], # Цена в копейках
+                                                            amount=int(float(round(float(cost),2))*100))], # Цена в копейках
                                 start_parameter="one-month-subscription",
                                 payload=payload)
         
@@ -272,7 +276,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
 
 
             order_link = ton_client.get_pay_link(user_id=str(user_id),
-                                                            amount=str(round(cost,2)),
+                                                            amount=str(round(float(cost),2)),
                                                             description=f'Payment for subscription to {channel_name} channel',
                                                             bot_url=config['bot']["url"],
                                                             externalId=externalId)

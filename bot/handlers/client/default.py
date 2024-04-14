@@ -205,7 +205,7 @@ async def get_all_paid_keyboard(bot: Bot, user_id: int):
 
 greet_kb = types.ReplyKeyboardMarkup(keyboard=[
     [types.KeyboardButton(text="/active_subscriptions")],
-    [types.KeyboardButton(text='/our_offerings'), types.KeyboardButton(text="/referral_system")]
+    [types.KeyboardButton(text='/our_offerings'), types.KeyboardButton(text="/my_invitations")]
 ],resize_keyboard=True)
 
 
@@ -221,10 +221,13 @@ async def cmd_start(message: types.Message, command: CommandObject):
     if message.chat.type == "private":
         # Get user id
         user_id = message.from_user.id
+        user_name = message.from_user.first_name
+
+        msg = f"Hello, {user_name}. Allow me to walk you through our subscription offerings. Click any of the buttons below to select a channel of interest. Alternatively, you can save money by bundling them all."
 
         if db.is_user(user_id=user_id):
             b = await get_all_paid_keyboard(message.bot, user_id)
-            await message.answer(text=strings['handlers']['start'],reply_markup=b, disable_web_page_preview=True)
+            await message.answer(text=msg,reply_markup=b, disable_web_page_preview=True)
             await message.answer(text=strings['Terms_of_Service'],reply_markup=greet_kb,parse_mode="HTML", disable_web_page_preview=True)
         # If the user is new
         else:
@@ -277,7 +280,7 @@ async def cmd_my_subscriptions(message: types.Message):
         await message.answer(text="Your subscriptions:",reply_markup=channels_keyboard)
 
 
-@router.message(Command("referral_system"))
+@router.message(Command("my_invitations"))
 async def cmd_referral_system(message: types.Message):
     config = config_client.get()
     user_id = message.from_user.id
