@@ -273,7 +273,7 @@ async def cmd_my_subscriptions(message: types.Message):
     # Private chat check 
     if message.chat.type == "private":
         user_id = message.from_user.id
-        channels_keyboard = await get_channels_keyboard(message.bot, user_id=user_id, sub=False)
+        channels_keyboard = await get_sub_channels_keyboard(message.bot, user_id=user_id)
         await message.answer(text="Your subscriptions:",reply_markup=channels_keyboard)
 
 

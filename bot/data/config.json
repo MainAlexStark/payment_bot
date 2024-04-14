@@ -9,7 +9,8 @@
     "Stripe": {
         "TOKEN": "350862534:LIVE:N2JmNDFlODY2MmZm"
     },
-    "channels": {
+    "channels":{
+        "paid":{
             "Gasoil Charta": {
                 "id": "-1002132858896",
                 "cost": "39",
@@ -28,7 +29,7 @@
                 "url": "https://t.me/free_test_channel"
             }
         }
-    ,
+    },
     "payment": {
         "subscription_duration": "30",
         "free_trial": "14",

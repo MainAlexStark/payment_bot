@@ -206,9 +206,10 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
             for name, data in config['channels']['paid'].items(): cost += float(data['cost'])
 
         if channel_name in config['channels']['paid'].keys():
-            cost = config['channels']['paid'][channel_name]['cost']
-            photo_url = config['channels']['paid'][channel_name]['img']
-            payload = str(config["channels"]["paid"][channel_name]["id"])
+            data = config['channels']['paid'][channel_name]
+            cost = data['cost']
+            photo_url = data['img']
+            payload = data['id']
 
         num_purchases = db.get_column(user_id=user_id, column='num_purchases')
         if num_purchases is not None:
