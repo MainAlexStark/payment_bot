@@ -170,8 +170,8 @@ if os.path.exists(file_path):
     db = DataBaseInterface(file_path, "users")
     #print(db.change_data(user_id='1849088118', column='start_date', new_value='01.03.2024'))
     #print(db.del_user(6525546927))
-    # db.del_user('684124197')
-    # db.del_user('6525546927')
+    #db.del_user('1849088118')
+    #db.del_user('6525546927')
     db.print()
 else:
     raise Exception(f'File {file_path} not found')

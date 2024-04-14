@@ -207,3 +207,73 @@ async def cmd_help(message: Message, state: FSMContext):
     except Exception as e:
         print(f'Error change channel data(config). Error: {e}')
         await message.answer(f'An error occurred. Error: {e}')
+
+
+
+class Add_admin(StatesGroup):
+    set_id = State()\
+    
+class Del_admin(StatesGroup):
+    set_id = State()
+
+
+@router.message(Command("del_admin"))
+async def cmd_del_channel(message: Message, state: FSMContext):
+    config = config_client.get()
+
+    if message.chat.type == "private":
+
+        if message.from_user.id in config['admins']:
+            channels = ''
+            i = 0
+            for name in config['admins']:
+                channels += f'\n{i}. {name}'
+                i += 1
+
+            await state.set_state(Del_admin.set_id)
+
+            await message.answer(text=f"Enter num user {channels}")
+
+# Обрабатываем имя
+@router.message(Del_admin.set_id)
+async def cmd_del_channel_name(message: Message, state: FSMContext):
+    config = config_client.get()
+    try:
+
+        del config['admins'][int(message.text)]
+        config_client.post(config)
+        await message.answer(text='succes!')
+
+    except Exception as e:
+        print(e)
+        await message.reply(f"Error del admin. Error: {e}")
+
+
+@router.message(Command("add_admin"))
+async def cmd_del_channel(message: Message, state: FSMContext):
+    config = config_client.get()
+
+    if message.chat.type == "private":
+
+        if message.from_user.id in config['admins']:
+            channels = ''
+            for name in config['admins']:
+                channels += f'\n{name}'
+
+            await state.set_state(Add_admin.set_id)
+
+            await message.answer(text=f"Enter user id {channels}")
+
+# Обрабатываем имя
+@router.message(Add_admin.set_id)
+async def cmd_del_channel_name(message: Message, state: FSMContext):
+    config = config_client.get()
+    try:
+
+        config['admins'].append(message.text)
+        config_client.post(config)
+        await message.answer(text='succes!')
+
+    except Exception as e:
+        print(e)
+        await message.reply(f"Error del admin. Error: {e}")
