@@ -297,11 +297,16 @@ async def cmd_referral_system(message: types.Message):
             if ref_num is not None:
                 user_num_referals = ref_num
 
+            cost = 100
+            if user_num_referals is not None:
+                if user_num_referals>5:user_num_referals=5
+                for i in range(user_num_referals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
+
             msg = f"We`re delighted to have you in our small commodity club. We prioritise relationships and offer you the opportunity to invite five trusted professionals.\n\
 An invitation entitles the recipient to a {config['payment']['discount']}% lifetime subscription discount. Also, as long as your invitees are members of our club, you will receive a 20% discount on your subscription for each of them!\n\
 Use the link below to extend an invitation: <code>{link}{user_id}</code>\n\
 Accepted invitations: {user_num_referals}\n\
-Your total discount: [Х]%"
+Your total discount: {100-cost}%"
             await message.reply(text=msg, parse_mode="HTML")
 
         else:
