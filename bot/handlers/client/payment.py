@@ -88,14 +88,17 @@ async def successful_payment(message: types.Message) -> None:
     trial_period = config['payment']['free_trial']
     sub_period = config['payment']['subscription_duration']
 
+    sub_date = db.get_column(user_id=user_id, column=name.replace(' ','_'))
+
     trial_date = db.get_column(user_id=user_id, column='start_date')
-    if trial_date is not None:
+    if sub_date is not None:
+        date = datetime.strptime(sub_date, "%d.%m.%Y")
+        date_plus_subscription_duration = date + timedelta(days=int(sub_period))
+        date_plus_diff_days = date_plus_subscription_duration.strftime("%d.%m.%Y")
+    elif trial_date is not None:
         date = datetime.strptime(trial_date, "%d.%m.%Y")
-        date_plus_subscription_duration = date + timedelta(days=int(trial_period))
-        diff = date_plus_subscription_duration - datetime.now()
-        diff_days = int(str(diff.days))
-        date_plus_diff = date + timedelta(days=diff_days)
-        date_plus_diff_days = date_plus_diff.strftime("%d.%m.%Y")
+        date_plus_trial_period = date + timedelta(days=int(trial_period))
+        date_plus_diff_days = date_plus_trial_period.strftime("%d.%m.%Y")
     else:
         date_plus_diff_days = datetime.now().strftime("%d.%m.%Y")
 
@@ -104,15 +107,6 @@ async def successful_payment(message: types.Message) -> None:
         for name, data in config['channels']['paid'].items():
             channel_id = data['id']
             await ai.unban_chat_member(channel_id=channel_id, user_id=user_id)
-
-            sub_date = db.get_column(user_id=user_id, column=name.replace(' ','_'))
-            if sub_date is not None:
-                date = datetime.strptime(sub_date, "%d.%m.%Y")
-                date_plus_subscription_duration = date + timedelta(days=int(sub_period))
-                diff = date_plus_subscription_duration - datetime.now()
-                diff_days = int(str(diff.days))
-                date_plus_diff = date + timedelta(days=diff_days)
-                date_plus_diff_days = date_plus_diff.strftime("%d.%m.%Y")
 
             db.change_data(user_id=user_id, column=name.replace(' ','_'), new_value=date_plus_diff_days)
 
@@ -140,16 +134,6 @@ async def successful_payment(message: types.Message) -> None:
         await ai.unban_chat_member(channel_id=channel_id, user_id=user_id)
 
         link = await ai.create_chat_invite_link(channel_id)
-
-        sub_date = db.get_column(user_id=user_id, column=channel_name.replace(' ','_'))
-        if sub_date is not None:
-            date = datetime.strptime(sub_date, "%d.%m.%Y")
-            date_plus_subscription_duration = date + timedelta(days=int(sub_period))
-            diff = date_plus_subscription_duration - datetime.now()
-            diff_days = int(str(diff.days))
-            print(diff_days)
-            date_plus_diff = date + timedelta(days=diff_days)
-            date_plus_diff_days = date_plus_diff.strftime("%d.%m.%Y")
 
         db.change_data(user_id=user_id, column=channel_name.replace(' ','_'), new_value=date_plus_diff_days)
 
