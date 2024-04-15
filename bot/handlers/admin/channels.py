@@ -211,7 +211,7 @@ async def cmd_help(message: Message, state: FSMContext):
 
 
 class Add_admin(StatesGroup):
-    set_id = State()\
+    set_id = State()
     
 class Del_admin(StatesGroup):
     set_id = State()

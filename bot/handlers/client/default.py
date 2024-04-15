@@ -88,7 +88,7 @@ async def get_channels_keyboard(bot: Bot, user_id: int, sub: bool) -> types.Inli
                             if num_refferals>5:num_refferals=5
                             for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
-                    buttons.append([types.InlineKeyboardButton(text=f"{name} - ${round(cost,2)} for {subscription_duration} days",
+                    buttons.append([types.InlineKeyboardButton(text=f"{name} - ${round(float(cost),2)} for {subscription_duration} days",
                                                         callback_data=f"pay=name")])
         else:
             raise Exception('Error create invite link')
@@ -189,7 +189,7 @@ async def get_all_paid_keyboard(bot: Bot, user_id: int):
                 if num_refferals>5:num_refferals=5
                 for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
-        buttons.append([types.InlineKeyboardButton(text=f"{name} - ${round(cost,2)} for {subscription_duration} days",
+        buttons.append([types.InlineKeyboardButton(text=f"{name} - ${round(float(cost),2)} for {subscription_duration} days",
                                                        callback_data=f"pay={name}")])
             
     num_purchases = db.get_column(user_id=user_id, column='num_purchases')
@@ -200,7 +200,7 @@ async def get_all_paid_keyboard(bot: Bot, user_id: int):
             for i in range(num_refferals):all_cost = float(all_cost)*(1-(float(config['payment']['discount'])/100))
 
     if all_cost != 0:
-        buttons.append([types.InlineKeyboardButton(text=f"All channels - {round(all_cost,2)} fot {subscription_duration} days",callback_data="pay=all")])
+        buttons.append([types.InlineKeyboardButton(text=f"All channels - {round(float(all_cost),2)} fot {subscription_duration} days",callback_data="pay=all")])
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)    
 
 greet_kb = types.ReplyKeyboardMarkup(keyboard=[

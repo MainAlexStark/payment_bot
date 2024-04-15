@@ -79,7 +79,6 @@ async def successful_payment(message: types.Message) -> None:
     if ref_id is not None and num_purchases==1:
         referrals = db.get_column(user_id=ref_id, column='ref_num')
         if referrals is None: referrals = 0
-        print(f"ref_id={ref_id}, referrals={referrals}, num_purchases={num_purchases}")
         if not db.change_data(user_id=ref_id, column='ref_num', new_value=referrals+1):
             print(f'Error change num referrals. user_id ={user_id}, num referrals = {referrals}')
         
@@ -178,7 +177,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                 if num_refferals>5:num_refferals=5
                 for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
             
-        await callback.bot.send_message(chat_id=user_id, text=f"Your payment is ${round(float(cost),2)} for {config["payment"]["subscription_duration"]} days",
+        await callback.bot.send_message(chat_id=user_id, text=f"Your payment is ${round(float(cost),2)} for {config['payment']['subscription_duration']} days",
                                             reply_markup=keyboard)
             
 
