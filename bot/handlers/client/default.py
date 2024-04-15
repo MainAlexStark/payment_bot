@@ -200,7 +200,7 @@ async def get_all_paid_keyboard(bot: Bot, user_id: int):
             for i in range(num_refferals):all_cost = float(all_cost)*(1-(float(config['payment']['discount'])/100))
 
     if all_cost != 0:
-        buttons.append([types.InlineKeyboardButton(text=f"All channels - {round(float(all_cost),2)} fot {subscription_duration} days",callback_data="pay=all")])
+        buttons.append([types.InlineKeyboardButton(text=f"All channels - {round(float(all_cost),2)} for {subscription_duration} days",callback_data="pay=all")])
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)    
 
 greet_kb = types.ReplyKeyboardMarkup(keyboard=[
