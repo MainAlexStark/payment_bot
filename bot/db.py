@@ -2,6 +2,7 @@ import sqlite3
 from datetime import datetime, timedelta
 import pandas as pd
 
+import shutil
 import os
 import json
 
@@ -45,10 +46,34 @@ class DataBaseInterface():
         self._db = DataBase(file_path=file_path)
         self._table_name = table_name
 
+    def create(self) -> bool:
+
+        try:
+
+            command = '''CREATE TABLE IF NOT EXISTS users (
+                            id INTEGER PRIMARY KEY,
+                            start_date TEXT,
+                            ref_id INTEGER,
+                            num_purchases INTEGER,
+                            ref_num INTEGER,
+                            ref_id_user INTEGER,
+                            Gasoil_Charta TEXT,
+                            Crude_Oil_Charta TEXT
+                        )'''
+            
+            self._db.execute(command=command)
+
+            return True
+
+        except Exception as e:
+            return False
+            print(f"Error create table. Error: {e}")
+
     def print(self) -> None:
         columns = self._db.get(f"PRAGMA table_info({self._table_name})")
         for column in columns:
             print(column[1])
+        print(columns)
 
         rows = self._db.get(f"SELECT * FROM {self._table_name}")
         for row in rows:
@@ -170,9 +195,9 @@ if os.path.exists(file_path):
     db = DataBaseInterface(file_path, "users")
     #print(db.change_data(user_id='1849088118', column='start_date', new_value='01.03.2024'))
     #print(db.del_user(6525546927))
-    #db.del_user('1849088118')
-    #db.del_user('6525546927')
+    db.create()
     db.print()
+    shutil.copyfile('data/database.db', 'data/database_copy.db')
 else:
     raise Exception(f'File {file_path} not found')
 
