@@ -1,6 +1,6 @@
 {
     "bot": {
-        "TOKEN": "7006348990:AAFj_wa46dHWfOEUeoKk1aF_wC7Sf0ri1tE",
+        "TOKEN": "6633685626:AAG00mDufO3TrR04Rx57Od4n9LtTaXGFPdg",
         "url": "https://t.me/encharta_bot"
     },
     "WalletPay": {
@@ -37,7 +37,8 @@
         "discount": "20"
     },
     "admins": [
-        684124197
+        684124197,
+        6525546927
     ],
     "commands": {
         "admin": [

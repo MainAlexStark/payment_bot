@@ -270,10 +270,10 @@ async def cmd_del_channel_name(message: Message, state: FSMContext):
     config = config_client.get()
     try:
 
-        config['admins'].append(message.text)
+        config['admins'].append(int(message.text))
         config_client.post(config)
         await message.answer(text='succes!')
 
     except Exception as e:
         print(e)
-        await message.reply(f"Error del admin. Error: {e}")
+        await message.reply(f"Error add admin. Error: {e}")
