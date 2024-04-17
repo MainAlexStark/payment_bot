@@ -35,6 +35,7 @@ class TON():
                 'currencyCode': 'USD',  # выставляем счет в долларах США
                 'amount': amount,
             },
+            "autoConversionCurrency": "USDT",
             'description': description,
             'externalId': externalId,  # ID счета на оплату в вашем боте
             'timeoutSeconds': 300,  # время действия счета в секундах

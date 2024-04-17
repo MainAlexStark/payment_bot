@@ -5,7 +5,7 @@ class OrdersStorage:
     def __init__(self):
         self.storage = {}
 
-    def add_element(self, key, value, channel, expiration_time):
+    def add_element(self, key: str, value: str, channel: str, expiration_time):
         self.storage[key] = {
             'value': value,
             'channel': channel,

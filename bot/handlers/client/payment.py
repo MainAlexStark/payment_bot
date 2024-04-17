@@ -1,5 +1,6 @@
 """ third party imports """
 import os
+import random
 
 from aiogram import Router, F, types
 from aiogram.filters import Command, CommandObject, CommandStart
@@ -238,10 +239,16 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
         if str(user_id) in orders.storage.keys():
                 await callback.bot.send_message(chat_id=user_id, text=f"You already have payment link")
         else:
-            externalId = str(int(time.time()))
+            def generate_key():
+                key = ''
+                for i in range(2):
+                    key += str(random.randint(100, 999)) + '-'
+                key += str(random.randint(100, 999))
+                return key
+
+            externalId = generate_key()
 
             if channel_name == 'all':
-                orders.add_element(str(user_id), externalId, 'all', 300)
                 cost = 0
                 for name, data in config['channels']['paid'].items(): 
                     is_sub = db.get_column(user_id=user_id, column=name.replace(' ','_'))
@@ -249,7 +256,6 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                         cost += float(data['cost'])
 
             if channel_name in config['channels']['paid'].keys():
-                orders.add_element(str(user_id), externalId, channel_id, 300)
                 cost = config['channels']['paid'][channel_name]['cost']
 
             
@@ -270,5 +276,14 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
             
             if len(order_link) > 0:
                 await callback.bot.send_message(chat_id=user_id, text=f"Your payment link: {order_link}. It will be valid for 5 minutes")
+
+                if channel_name == 'all':
+                    orders.add_element(str(user_id), externalId, 'all', 300)
+                if channel_name in config['channels']['paid'].keys():
+                    orders.add_element(str(user_id), externalId, channel_id, 300)
+
             else:
                 await callback.bot.send_message(chat_id=user_id, text=f"Oops, there was a mistake. Try a different payment method, or try again later.")
+
+
+            
