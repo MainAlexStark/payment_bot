@@ -10,7 +10,7 @@ from aiogram_interface import AiogramInterface
 from handlers.client.default import get_all_paid_keyboard
 
 """ OPEN DataBase """
-file_path = 'data/DataBase.db'
+file_path = 'data/Database.db'
 if os.path.exists(file_path):
     db = DataBaseInterface(file_path, "users")
 else:

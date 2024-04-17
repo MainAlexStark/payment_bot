@@ -17,7 +17,7 @@ from aiogram_interface import AiogramInterface
 router = Router()
 
 """ OPEN DataBase """
-file_path = 'data/DataBase.db'
+file_path = 'data/Database.db'
 if os.path.exists(file_path):
     db = DataBaseInterface(file_path, "users")
 else:
@@ -126,7 +126,8 @@ async def get_not_sub_channels_keyboard(bot: Bot, user_id: int):
             buttons.append([types.InlineKeyboardButton(text=f"{name} - ${round(cost,2)} for {subscription_duration} days",
                                                        callback_data=f"pay={name}")])
     if all_cost != 0:
-        buttons.append([types.InlineKeyboardButton(text=f"All channels - {round(all_cost,2)} for {subscription_duration} days",callback_data="pay=all")])
+        all_cost = int((round(all_cost, -1) * 0.8) - 1)
+        buttons.append([types.InlineKeyboardButton(text=f"All channels - ${round(all_cost,2)} for {subscription_duration} days",callback_data="pay=all")])
             
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)  
 
@@ -200,7 +201,8 @@ async def get_all_paid_keyboard(bot: Bot, user_id: int):
             for i in range(num_refferals):all_cost = float(all_cost)*(1-(float(config['payment']['discount'])/100))
 
     if all_cost != 0:
-        buttons.append([types.InlineKeyboardButton(text=f"All channels - {round(float(all_cost),2)} for {subscription_duration} days",callback_data="pay=all")])
+        all_cost = int((round(all_cost, -1) * 0.8) - 1)
+        buttons.append([types.InlineKeyboardButton(text=f"All channels - ${round(float(all_cost),2)} for {subscription_duration} days",callback_data="pay=all")])
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)    
 
 greet_kb = types.ReplyKeyboardMarkup(keyboard=[
@@ -310,4 +312,4 @@ Your total discount: {100-cost}%"
             await message.reply(text=msg, parse_mode="HTML")
 
         else:
-            await message.reply(text="Make your first purchase first!")
+            await message.answer(text="Make your first purchase first!")

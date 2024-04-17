@@ -22,7 +22,7 @@ from payments.orders import orders
 router = Router()
 
 """ OPEN DataBase """
-file_path = 'data/DataBase.db'
+file_path = 'data/Database.db'
 if os.path.exists(file_path):
     db = DataBaseInterface(file_path, "users")
 else:
@@ -165,7 +165,9 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
         cost = 0
         if channel_name == 'all':
             cost = 0
-            for name, data in config['channels']['paid'].items(): cost += float(data['cost'])
+            for name, data in config['channels']['paid'].items():
+                cost += float(data['cost'])
+            cost = int((round(cost, -1) * 0.8) - 1)
         # If pay one channel
         elif channel_name in config['channels']['paid'].keys():
             cost = config['channels']['paid'][channel_name]['cost']
@@ -204,6 +206,8 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                 if num_refferals>5:num_refferals=5
                 for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
+        cost = int((round(cost, -1) * 0.8) - 1)
+
         await callback.bot.send_invoice(
                                 callback.from_user.id,
                                 title=channel_name,
@@ -234,7 +238,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
         if str(user_id) in orders.storage.keys():
                 await callback.bot.send_message(chat_id=user_id, text=f"You already have payment link")
         else:
-            externalId = str(time.time())
+            externalId = str(int(time.time()))
 
             if channel_name == 'all':
                 orders.add_element(str(user_id), externalId, 'all', 300)
@@ -256,6 +260,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                     if num_refferals>5:num_refferals=5
                     for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
+            cost = int((round(cost, -1) * 0.8) - 1)
 
             order_link = ton_client.get_pay_link(user_id=str(user_id),
                                                             amount=str(round(float(cost),2)),

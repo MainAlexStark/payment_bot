@@ -9,7 +9,7 @@ from db import Config, DataBaseInterface
 router = Router()
 
 """ OPEN DataBase """
-file_path = 'data/DataBase.db'
+file_path = 'data/Database.db'
 if os.path.exists(file_path):
     db = DataBaseInterface(file_path, "users")
 else:

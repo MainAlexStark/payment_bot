@@ -11,7 +11,7 @@ from aiogram_interface import AiogramInterface
 from payments.orders import orders
 
 """ OPEN DataBase """
-file_path = 'data/DataBase.db'
+file_path = 'data/Database.db'
 if os.path.exists(file_path):
     db = DataBaseInterface(file_path, "users")
 else:
@@ -38,6 +38,8 @@ async def check(bot: Bot):
     ai = AiogramInterface(bot)
     config = config_client.get()
     api = WalletPayAPI(api_key=config["WalletPay"]["TOKEN"])
+
+    print(f"TON ORDERS={orders.storage}")
 
     for user_id in db.get_users():
         try:
@@ -130,3 +132,8 @@ async def check(bot: Bot):
 
         except Exception as e:
             print(f'Error get order preview. Error: {e}')
+            await bot.send_message(chat_id=user_id, text=f"Oops, an error occurred, wait for 5 minutes, and if the problem is not solved, contact support")
+
+            for id in config["admins"]:
+                await bot.send_message(chat_id=id ,text=f"Failed to verify {user_id} payment")
+                
