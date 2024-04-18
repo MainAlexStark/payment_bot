@@ -9,6 +9,7 @@ from db import DataBaseInterface, Config
 from handlers.client.default import get_not_sub_channels_keyboard
 from aiogram_interface import AiogramInterface
 from payments.orders import orders
+from payments.ton import TON
 
 """ OPEN DataBase """
 file_path = 'data/Database.db'
@@ -37,16 +38,18 @@ else:
 async def check(bot: Bot):
     ai = AiogramInterface(bot)
     config = config_client.get()
-    api = WalletPayAPI(api_key=config["WalletPay"]["TOKEN"])
+    api = TON(api_key=config["WalletPay"]["TOKEN"])
 
     print(f"TON ORDERS={orders.storage}")
 
     for user_id in db.get_users():
         try:
             if str(user_id) in orders.storage.keys():
-                order_preview = api.get_order_preview(order_id=orders.storage[str(user_id)]['value'])
+                print('///')
+                order_preview_status = api.get_order_preview(order_id=orders.storage[str(user_id)])['status']
+                print('///')
 
-                if order_preview.status == "PAID":
+                if order_preview_status == "PAID":
 
                     num_purchases = db.get_column(user_id=user_id, column='num_purchases')
 

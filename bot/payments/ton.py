@@ -15,6 +15,8 @@ class TON():
 
         data = response.json()
 
+        print(f"DATA: {data}")
+
         if (response.status_code != 200) or (data['status'] not in ["SUCCESS", "ALREADY"]):
             print("# code: %s json: %s", response.status_code, data)
             return ''
@@ -39,10 +41,12 @@ class TON():
             'description': description,
             'externalId': externalId,  # ID счета на оплату в вашем боте
             'timeoutSeconds': 300,  # время действия счета в секундах
-            'customerTelegramUserId': user_id,  # ID аккаунта Telegram покупателя
+            'customerTelegramUserId': int(user_id),  # ID аккаунта Telegram покупателя
             'returnUrl': bot_url,  # после успешной оплаты направить покупателя в наш бот
             'failReturnUrl': 'https://t.me/wallet',  # при отсутствии оплаты оставить покупателя в @wallet
             }
+
+            print(f"get_pay_link requests:\nPOST\nheaders={headers}\npayload={payload}")
 
             response = requests.post(
             "https://pay.wallet.tg/wpay/store-api/v1/order",

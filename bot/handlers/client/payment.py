@@ -246,7 +246,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                 key += str(random.randint(100, 999))
                 return key
 
-            externalId = generate_key()
+            externalId = str(int(time.time()))
 
             if channel_name == 'all':
                 cost = 0
@@ -254,6 +254,8 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                     is_sub = db.get_column(user_id=user_id, column=name.replace(' ','_'))
                     if is_sub is not None:
                         cost += float(data['cost'])
+
+                cost = int((round(cost, -1) * 0.8) - 1)
 
             if channel_name in config['channels']['paid'].keys():
                 cost = config['channels']['paid'][channel_name]['cost']
@@ -266,7 +268,6 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                     if num_refferals>5:num_refferals=5
                     for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
-            cost = int((round(cost, -1) * 0.8) - 1)
 
             order_link = ton_client.get_pay_link(user_id=str(user_id),
                                                             amount=str(round(float(cost),2)),

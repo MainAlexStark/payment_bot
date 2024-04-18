@@ -36,7 +36,6 @@ async def check(bot: Bot) -> None:
     config = config_client.get()
     """ We go through the ids of all users and perform the necessary actions """
     for user_id in db.get_users():
-        print(user_id)
         
         free_trial = db.get_column(user_id=user_id, column='start_date')
 
@@ -49,8 +48,6 @@ async def check(bot: Bot) -> None:
             date_obj = datetime.strptime(free_trial, '%d.%m.%Y')
             date_plus_trial = date_obj + timedelta(days=int(config['payment']['free_trial']))
             today = datetime.today()
-
-            print(f'date_plus_trial={date_plus_trial}')
 
             if date_plus_trial.date() - timedelta(days=int(config['payment']['days_notice'])) == today.date():
                 await bot.send_message(user_id, text=message, reply_markup=keyboard)
