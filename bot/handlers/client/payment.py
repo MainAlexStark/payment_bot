@@ -194,6 +194,8 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
             payload = 'all'
             for name, data in config['channels']['paid'].items(): cost += float(data['cost'])
 
+            cost = int((round(cost, -1) * 0.8) - 1)
+
         if channel_name in config['channels']['paid'].keys():
             data = config['channels']['paid'][channel_name]
             cost = data['cost']

@@ -125,7 +125,14 @@ async def get_not_sub_channels_keyboard(bot: Bot, user_id: int):
 
             buttons.append([types.InlineKeyboardButton(text=f"{name} - ${round(cost,2)} for {subscription_duration} days",
                                                        callback_data=f"pay={name}")])
+    
+    
     if all_cost != 0:
+        if num_purchases is not None:
+                num_refferals = db.get_column(user_id=user_id, column='ref_num')
+                if num_refferals is not None:
+                    if num_refferals>5:num_refferals=5
+                    for i in range(num_refferals):all_cost = float(all_cost)*(1-(float(config['payment']['discount'])/100))
         all_cost = int((round(all_cost, -1) * 0.8) - 1)
         buttons.append([types.InlineKeyboardButton(text=f"All channels - ${round(all_cost,2)} for {subscription_duration} days",callback_data="pay=all")])
             
@@ -193,15 +200,16 @@ async def get_all_paid_keyboard(bot: Bot, user_id: int):
         buttons.append([types.InlineKeyboardButton(text=f"{name} - ${round(float(cost),2)} for {subscription_duration} days",
                                                        callback_data=f"pay={name}")])
             
+    all_cost = int((round(all_cost, -1) * 0.8) - 1)
     num_purchases = db.get_column(user_id=user_id, column='num_purchases')
     if num_purchases is not None:
+        
         num_refferals = db.get_column(user_id=user_id, column='ref_num')
         if num_refferals is not None:
             if num_refferals>5:num_refferals=5
             for i in range(num_refferals):all_cost = float(all_cost)*(1-(float(config['payment']['discount'])/100))
 
     if all_cost != 0:
-        all_cost = int((round(all_cost, -1) * 0.8) - 1)
         buttons.append([types.InlineKeyboardButton(text=f"All channels - ${round(float(all_cost),2)} for {subscription_duration} days",callback_data="pay=all")])
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)    
 
