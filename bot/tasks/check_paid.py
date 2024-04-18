@@ -136,6 +136,8 @@ async def check(bot: Bot):
 
                         await bot.send_message(chat_id=user_id ,text=f'Payment for the {channel_name} was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
                                             , reply_markup=keyboard)
+                        
+                        del orders.storage[str(user_id)]
 
         except Exception as e:
             print(f'Error get order preview. Error: {e}')
