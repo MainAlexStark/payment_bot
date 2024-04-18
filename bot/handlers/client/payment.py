@@ -168,17 +168,27 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
             cost = 0
             for name, data in config['channels']['paid'].items():
                 cost += float(data['cost'])
-            cost = int((round(cost, -1) * 0.8) - 1)
+
+            num_purchases = db.get_column(user_id=user_id, column='num_purchases')
+
+            cost = cost*0.8
+            if num_purchases is not None:
+                    num_refferals = db.get_column(user_id=user_id, column='ref_num')
+                    if num_refferals is not None:
+                        if num_refferals>5:num_refferals=5
+                        for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
+            cost = int(round(cost, -1) - 1)
+
         # If pay one channel
         elif channel_name in config['channels']['paid'].keys():
             cost = config['channels']['paid'][channel_name]['cost']
 
-        num_purchases = db.get_column(user_id=user_id, column='num_purchases')
-        if num_purchases is not None:
-            num_refferals = db.get_column(user_id=user_id, column='ref_num')
-            if num_refferals is not None:
-                if num_refferals>5:num_refferals=5
-                for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
+            num_purchases = db.get_column(user_id=user_id, column='num_purchases')
+            if num_purchases is not None:
+                num_refferals = db.get_column(user_id=user_id, column='ref_num')
+                if num_refferals is not None:
+                    if num_refferals>5:num_refferals=5
+                    for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
             
         await callback.bot.send_message(chat_id=user_id, text=f"Your payment is ${round(float(cost),2)} for {config['payment']['subscription_duration']} days",
                                             reply_markup=keyboard)
@@ -194,7 +204,15 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
             payload = 'all'
             for name, data in config['channels']['paid'].items(): cost += float(data['cost'])
 
-            cost = int((round(cost, -1) * 0.8) - 1)
+            num_purchases = db.get_column(user_id=user_id, column='num_purchases')
+
+            cost = cost*0.8
+            if num_purchases is not None:
+                    num_refferals = db.get_column(user_id=user_id, column='ref_num')
+                    if num_refferals is not None:
+                        if num_refferals>5:num_refferals=5
+                        for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
+            cost = int(round(cost, -1) - 1)
 
         if channel_name in config['channels']['paid'].keys():
             data = config['channels']['paid'][channel_name]
@@ -202,14 +220,12 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
             photo_url = data['img']
             payload = data['id']
 
-        num_purchases = db.get_column(user_id=user_id, column='num_purchases')
-        if num_purchases is not None:
-            num_refferals = db.get_column(user_id=user_id, column='ref_num')
-            if num_refferals is not None:
-                if num_refferals>5:num_refferals=5
-                for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
-
-        cost = int((round(cost, -1) * 0.8) - 1)
+            num_purchases = db.get_column(user_id=user_id, column='num_purchases')
+            if num_purchases is not None:
+                num_refferals = db.get_column(user_id=user_id, column='ref_num')
+                if num_refferals is not None:
+                    if num_refferals>5:num_refferals=5
+                    for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
         await callback.bot.send_invoice(
                                 callback.from_user.id,
@@ -257,18 +273,26 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                     if is_sub is not None:
                         cost += float(data['cost'])
 
-                cost = int((round(cost, -1) * 0.8) - 1)
+                num_purchases = db.get_column(user_id=user_id, column='num_purchases')
+
+                cost = cost*0.8
+                if num_purchases is not None:
+                        num_refferals = db.get_column(user_id=user_id, column='ref_num')
+                        if num_refferals is not None:
+                            if num_refferals>5:num_refferals=5
+                            for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
+                cost = int(round(cost, -1) - 1)
 
             if channel_name in config['channels']['paid'].keys():
                 cost = config['channels']['paid'][channel_name]['cost']
 
             
-            num_purchases = db.get_column(user_id=user_id, column='num_purchases')
-            if num_purchases is not None:
-                num_refferals = db.get_column(user_id=user_id, column='ref_num')
-                if num_refferals is not None:
-                    if num_refferals>5:num_refferals=5
-                    for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
+                num_purchases = db.get_column(user_id=user_id, column='num_purchases')
+                if num_purchases is not None:
+                    num_refferals = db.get_column(user_id=user_id, column='ref_num')
+                    if num_refferals is not None:
+                        if num_refferals>5:num_refferals=5
+                        for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
 
             order_data = ton_client.get_pay_link(user_id=str(user_id),

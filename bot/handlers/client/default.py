@@ -128,13 +128,14 @@ async def get_not_sub_channels_keyboard(bot: Bot, user_id: int):
     
     
     if all_cost != 0:
+        all_cost = all_cost*0.8
         if num_purchases is not None:
                 num_refferals = db.get_column(user_id=user_id, column='ref_num')
                 if num_refferals is not None:
                     if num_refferals>5:num_refferals=5
                     for i in range(num_refferals):all_cost = float(all_cost)*(1-(float(config['payment']['discount'])/100))
-        all_cost = int((round(all_cost, -1) * 0.8) - 1)
-        buttons.append([types.InlineKeyboardButton(text=f"All channels - ${round(all_cost,2)} for {subscription_duration} days",callback_data="pay=all")])
+        all_cost = int(round(all_cost, -1) - 1)
+        buttons.append([types.InlineKeyboardButton(text=f"All channels (20% off) - ${round(all_cost,2)} for {subscription_duration} days",callback_data="pay=all")])
             
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)  
 
@@ -200,17 +201,18 @@ async def get_all_paid_keyboard(bot: Bot, user_id: int):
         buttons.append([types.InlineKeyboardButton(text=f"{name} - ${round(float(cost),2)} for {subscription_duration} days",
                                                        callback_data=f"pay={name}")])
             
-    all_cost = int((round(all_cost, -1) * 0.8) - 1)
+    
     num_purchases = db.get_column(user_id=user_id, column='num_purchases')
+    all_cost = all_cost*0.8
     if num_purchases is not None:
-        
-        num_refferals = db.get_column(user_id=user_id, column='ref_num')
-        if num_refferals is not None:
-            if num_refferals>5:num_refferals=5
-            for i in range(num_refferals):all_cost = float(all_cost)*(1-(float(config['payment']['discount'])/100))
+            num_refferals = db.get_column(user_id=user_id, column='ref_num')
+            if num_refferals is not None:
+                if num_refferals>5:num_refferals=5
+                for i in range(num_refferals):all_cost = float(all_cost)*(1-(float(config['payment']['discount'])/100))
+    all_cost = int(round(all_cost, -1) - 1)
 
     if all_cost != 0:
-        buttons.append([types.InlineKeyboardButton(text=f"All channels - ${round(float(all_cost),2)} for {subscription_duration} days",callback_data="pay=all")])
+        buttons.append([types.InlineKeyboardButton(text=f"All channels (20% off) - ${round(float(all_cost),2)} for {subscription_duration} days",callback_data="pay=all")])
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)    
 
 greet_kb = types.ReplyKeyboardMarkup(keyboard=[
@@ -233,7 +235,7 @@ async def cmd_start(message: types.Message, command: CommandObject):
         user_id = message.from_user.id
         user_name = message.from_user.first_name
 
-        msg = f"Hello, {user_name}. Allow me to walk you through our subscription offerings. Click any of the buttons below to select a channel of interest. Alternatively, you can save money by bundling them all."
+        msg = f"Hello, {user_name}. Allow me to walk you through our subscription offerings. Click any of the buttons below to select a channel of interest. Alternatively, you can save {config['payment']['discount']}% by bundling them all."
 
         if db.is_user(user_id=user_id):
             b = await get_all_paid_keyboard(message.bot, user_id)
