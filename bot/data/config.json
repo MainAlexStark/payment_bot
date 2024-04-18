@@ -1,13 +1,13 @@
 {
     "bot": {
-        "TOKEN": "6633685626:AAG00mDufO3TrR04Rx57Od4n9LtTaXGFPdg",
+        "TOKEN": "7006348990:AAFj_wa46dHWfOEUeoKk1aF_wC7Sf0ri1tE",
         "url": "https://t.me/encharta_bot"
     },
     "WalletPay": {
         "TOKEN": "sUKsbgvRP00nHSFDmj8syshxwRbyMzcm9rsi"
     },
     "Stripe": {
-        "TOKEN": "284685063:TEST:YjUxMTBhODE1Nzkz"
+        "TOKEN": "350862534:LIVE:N2JmNDFlODY2MmZm"
     },
     "channels": {
         "paid": {
