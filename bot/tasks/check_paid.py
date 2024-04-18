@@ -40,7 +40,7 @@ async def check(bot: Bot):
     config = config_client.get()
     api = TON(api_key=config["WalletPay"]["TOKEN"])
 
-    print(f"TON ORDERS={orders.storage}")
+    #print(f"TON ORDERS={orders.storage}")
 
     for user_id in db.get_users():
         try:
@@ -76,12 +76,10 @@ async def check(bot: Bot):
                         if not db.change_data(user_id=ref_id, column='ref_num', new_value=referrals+1):
                             print(f'Error change num referrals. user_id ={user_id}, num referrals = {referrals}')
                         
-
+                    sub_date = db.get_column(user_id=user_id, column=channel_name.replace(' ','_'))
 
                     trial_period = config['payment']['free_trial']
                     sub_period = config['payment']['subscription_duration']
-
-                    sub_date = db.get_column(user_id=user_id, column=name.replace(' ','_'))
 
                     trial_date = db.get_column(user_id=user_id, column='start_date')
                     if sub_date is not None:
@@ -101,6 +99,20 @@ async def check(bot: Bot):
                             channel_id = data['id']
                             await ai.unban_chat_member(channel_id=channel_id, user_id=user_id)
 
+                            sub_date = db.get_column(user_id=user_id, column=name.replace(' ','_'))
+
+                            trial_date = db.get_column(user_id=user_id, column='start_date')
+                            if sub_date is not None:
+                                date = datetime.strptime(sub_date, "%d.%m.%Y")
+                                date_plus_subscription_duration = date + timedelta(days=int(sub_period))
+                                date_plus_diff_days = date_plus_subscription_duration.strftime("%d.%m.%Y")
+                            elif trial_date is not None:
+                                date = datetime.strptime(trial_date, "%d.%m.%Y")
+                                date_plus_trial_period = date + timedelta(days=int(trial_period))
+                                date_plus_diff_days = date_plus_trial_period.strftime("%d.%m.%Y")
+                            else:
+                                date_plus_diff_days = datetime.now().strftime("%d.%m.%Y")
+
                             db.change_data(user_id=user_id, column=name.replace(' ','_'), new_value=date_plus_diff_days)
 
                             link = await ai.create_chat_invite_link(channel_id)
@@ -109,7 +121,7 @@ async def check(bot: Bot):
 
                         keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
-                        await bot.send_message(chat_id=user_id,text=f'Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
+                        await bot.send_message(chat_id=user_id, text=f'Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
                                             , reply_markup=keyboard)
                         
                     else:
@@ -122,11 +134,11 @@ async def check(bot: Bot):
 
                         buttons = []
 
-                        sub_period = config['payment']['subscription_duration']
-
                         await ai.unban_chat_member(channel_id=channel_id, user_id=user_id)
 
                         link = await ai.create_chat_invite_link(channel_id)
+
+                        print(f"sub_date={sub_date}")
 
                         db.change_data(user_id=user_id, column=channel_name.replace(' ','_'), new_value=date_plus_diff_days)
 
@@ -134,7 +146,7 @@ async def check(bot: Bot):
                             [types.InlineKeyboardButton(text=channel_name, url=link)]
                         ])
 
-                        await bot.send_message(chat_id=user_id ,text=f'Payment for the {channel_name} was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
+                        await bot.send_message(chat_id=user_id, text=f'Payment for the {channel_name} was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
                                             , reply_markup=keyboard)
                         
                     del orders.storage[str(user_id)]

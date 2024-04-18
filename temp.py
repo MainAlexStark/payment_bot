@@ -16,10 +16,18 @@
 #             filename = os.path.join(root, name)
 #             check_quotes(filename)
 
+all_cost = 66
+num_purchases = 1
+num_refferals = 0
 
-from bot.payments.ton import TON
+all_cost = all_cost*(1-(float(20)/100))
+print(all_cost)
+if num_purchases is not None:
+        if num_refferals is not None:
+            if num_refferals>5:num_refferals=5
+            for i in range(num_refferals):all_cost = float(all_cost)*(1-(float(20))/100)
+print(all_cost)
+all_cost = int(round(all_cost, -1) - 1)
 
-ton = TON("sUKsbgvRP00nHSFDmj8syshxwRbyMzcm9rsi")
 
-
-print(ton.get_pay_link("684124197", "0.01", "decription", "https://t.me/encharta_bot", "123452"))
+print(all_cost)

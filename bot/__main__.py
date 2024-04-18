@@ -63,7 +63,7 @@ async def main():
 
     # Отправьте асинхронную задачу для постоянной проверки окончания подписки или пробного периода на какой либо канал
     asyncio.create_task(scheduled(bot, 86400))  # 86400 секунд - это 24 часа
-    asyncio.create_task(paid_handler(bot, 60))  # Проверяем оплату
+    asyncio.create_task(paid_handler(bot, 5))  # Проверяем оплату
 
     try:
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())

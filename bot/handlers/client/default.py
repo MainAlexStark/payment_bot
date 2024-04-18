@@ -314,7 +314,7 @@ async def cmd_referral_system(message: types.Message):
                 if user_num_referals>5:user_num_referals=5
                 for i in range(user_num_referals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
-            msg = f"We`re delighted to have you in our small commodity club. We prioritise relationships and offer you the opportunity to invite five trusted professionals.\n\
+            msg = f"We are delighted to have you in our small commodity club. We prioritise relationships and offer you the opportunity to invite five trusted professionals.\n\
 An invitation entitles the recipient to a {config['payment']['discount']}% lifetime subscription discount. Also, as long as your invitees are members of our club, you will receive a 20% discount on your subscription for each of them!\n\
 Use the link below to extend an invitation: <code>{link}{user_id}</code>\n\
 Accepted invitations: {user_num_referals}\n\
