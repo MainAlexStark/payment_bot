@@ -55,7 +55,7 @@ async def check(bot: Bot):
                     channel_id = int(orders.storage[str(user_id)]['channel'])
                     channel_name = ''
 
-                    for name, data in config['channels']['paid'].items:
+                    for name, data in config['channels']['paid'].items():
                         if str(channel_id) == data['id']: channel_name=name
 
                     if num_purchases is not None:
