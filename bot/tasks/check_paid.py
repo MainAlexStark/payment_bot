@@ -52,7 +52,7 @@ async def check(bot: Bot):
 
                     num_purchases = db.get_column(user_id=user_id, column='num_purchases')
 
-                    channel_id = int(orders.storage['channel'])
+                    channel_id = int(orders.storage[str(user_id)]['channel'])
                     channel_name = ''
 
                     for name, data in config['channels']['paid'].items:
@@ -99,7 +99,7 @@ async def check(bot: Bot):
                     else:
                         date_plus_diff_days = datetime.now().strftime("%d.%m.%Y")
 
-                    if orders.storage['channel'] == 'all':
+                    if orders.storage[str(user_id)]['channel'] == 'all':
                         buttons = []
                         for name, data in config['channels']['paid'].items():
                             channel_id = data['id']
@@ -133,12 +133,12 @@ async def check(bot: Bot):
                                             , reply_markup=keyboard)
 
         except Exception as e:
+            print(f'Error get order preview. Error: {e}')
             if orders.storage[str(user_id)]['errors'] == 0:
-                print(f'Error get order preview. Error: {e}')
                 await bot.send_message(chat_id=user_id, text=f"Oops, an error occurred, wait for 5 minutes, and if the problem is not solved, contact support")
 
                 for id in config["admins"]:
-                    await bot.send_message(chat_id=id ,text=f"Failed to verify {user_id} payment")
+                    await bot.send_message(chat_id=id ,text=f"Failed to verify {user_id} payment. Error: {e}")
 
                 orders.storage[str(user_id)]['errors'] = 1
                 
