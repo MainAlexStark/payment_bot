@@ -269,19 +269,22 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                     for i in range(num_refferals):cost = float(cost)*(1-(float(config['payment']['discount'])/100))
 
 
-            order_link = ton_client.get_pay_link(user_id=str(user_id),
+            order_data = ton_client.get_pay_link(user_id=str(user_id),
                                                             amount=str(round(float(cost),2)),
                                                             description=f'Payment for subscription to {channel_name} channel',
                                                             bot_url=config['bot']["url"],
                                                             externalId=externalId)
             
+            order_link = order_data['payLink']
+            order_id = order_data['id']
+            
             if len(order_link) > 0:
                 await callback.bot.send_message(chat_id=user_id, text=f"Your payment link: {order_link}. It will be valid for 5 minutes")
 
                 if channel_name == 'all':
-                    orders.add_element(str(user_id), externalId, 'all', 300)
+                    orders.add_element(str(user_id), str(order_id), 'all', 300)
                 if channel_name in config['channels']['paid'].keys():
-                    orders.add_element(str(user_id), externalId, channel_id, 300)
+                    orders.add_element(str(user_id), str(order_id), channel_id, 300)
 
             else:
                 await callback.bot.send_message(chat_id=user_id, text=f"Oops, there was a mistake. Try a different payment method, or try again later.")

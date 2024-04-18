@@ -10,7 +10,7 @@ class OrdersStorage:
             'value': value,
             'channel': channel,
             'expiration_time': time.time() + expiration_time,
-            'error': 0
+            'errors': 0
         }
         # Создаем отдельный поток для удаления элемента после истечения времени
         threading.Thread(target=self.remove_element_after_timeout, args=(key, expiration_time)).start()

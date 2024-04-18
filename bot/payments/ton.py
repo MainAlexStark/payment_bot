@@ -6,22 +6,26 @@ class TON():
 
     def get_order_preview(self, order_id: str):
         headers = {
-        'Wpay-Store-Api-Key': self.api_key,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        'Wpay-Store-Api-Key': self.api_key
         }
 
-        response = requests.get("https://pay.wallet.tg/wpay/store-api/v1/order/" + f"order/preview?id={order_id}", headers=headers)
+        params = {
+            "id": order_id
+        }
+
+        url = "https://pay.wallet.tg/wpay/store-api/v1/order/preview"
+
+        response = requests.get(url, headers=headers, params=params)
 
         data = response.json()
 
-        print(f"DATA: {data}")
+        #print(f"DATA: {data}, order_id= {order_id}")
 
         if (response.status_code != 200) or (data['status'] not in ["SUCCESS", "ALREADY"]):
             print("# code: %s json: %s", response.status_code, data)
             return ''
 
-        return data['data']
+        return data['data']['status']
 
 
     def get_pay_link(self, user_id: str, amount: str, description: str, bot_url: str, externalId: str) -> str:
@@ -45,7 +49,7 @@ class TON():
             'failReturnUrl': 'https://t.me/wallet',  # при отсутствии оплаты оставить покупателя в @wallet
             }
 
-            print(f"get_pay_link requests:\nPOST\nheaders={headers}\npayload={payload}")
+            #print(f"get_pay_link requests:\nPOST\nheaders={headers}\npayload={payload}")
 
             response = requests.post(
             "https://pay.wallet.tg/wpay/store-api/v1/order",
@@ -53,11 +57,13 @@ class TON():
             )
             data = response.json()
 
+            #print(f"get_pay_link data: {data}")
+
             if (response.status_code != 200) or (data['status'] not in ["SUCCESS", "ALREADY"]):
                 print("# code: %s json: %s", response.status_code, data)
                 return ''
 
-            return data['data']['payLink']
+            return data['data']
         
         except Exception as e:
             print('Error get pay link')

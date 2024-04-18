@@ -45,7 +45,7 @@ async def check(bot: Bot):
     for user_id in db.get_users():
         try:
             if str(user_id) in orders.storage.keys():
-                order_preview_status = api.get_order_preview(order_id=orders.storage[str(user_id)])['status']
+                order_preview_status = api.get_order_preview(order_id=orders.storage[str(user_id)]['value'])
 
 
                 if order_preview_status == "PAID":
@@ -133,12 +133,12 @@ async def check(bot: Bot):
                                             , reply_markup=keyboard)
 
         except Exception as e:
-            if orders.storage['errors'] == 0:
+            if orders.storage[str(user_id)]['errors'] == 0:
                 print(f'Error get order preview. Error: {e}')
                 await bot.send_message(chat_id=user_id, text=f"Oops, an error occurred, wait for 5 minutes, and if the problem is not solved, contact support")
 
                 for id in config["admins"]:
                     await bot.send_message(chat_id=id ,text=f"Failed to verify {user_id} payment")
 
-                orders.storage['errors'] = 1
+                orders.storage[str(user_id)]['errors'] = 1
                 
