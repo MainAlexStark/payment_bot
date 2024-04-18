@@ -68,8 +68,9 @@ async def check(bot: Bot):
                             print(f'Error change num_purchases. user_id ={user_id}, num_purchases = {num_purchases}')
 
                     ref_id = db.get_column(user_id=user_id, column='ref_id')
+                    num_purchases = db.get_column(user_id=user_id, column='num_purchases')
 
-                    if ref_id is not None:
+                    if ref_id is not None and num_purchases==1:
                         referrals = db.get_column(user_id=ref_id, column='ref_num')
                         if referrals is None: referrals = 0
                         if not db.change_data(user_id=ref_id, column='ref_num', new_value=referrals+1):
@@ -80,26 +81,21 @@ async def check(bot: Bot):
                     trial_period = config['payment']['free_trial']
                     sub_period = config['payment']['subscription_duration']
 
+                    sub_date = db.get_column(user_id=user_id, column=name.replace(' ','_'))
+
                     trial_date = db.get_column(user_id=user_id, column='start_date')
-                    sub_date = db.get_column(user_id=user_id, column=channel_name.replace(' ','_'))
-                    if trial_date is not None:
-                        date = datetime.strptime(trial_date, "%d.%m.%Y")
-                        date_plus_subscription_duration = date + timedelta(days=int(trial_period))
-                        diff = date_plus_subscription_duration - datetime.now()
-                        diff_days = int(str(diff.days))
-                        date_plus_diff = date + timedelta(days=diff_days)
-                        date_plus_diff_days = date_plus_diff.strftime("%d.%m.%Y")
-                    elif sub_date is not None:
+                    if sub_date is not None:
                         date = datetime.strptime(sub_date, "%d.%m.%Y")
                         date_plus_subscription_duration = date + timedelta(days=int(sub_period))
-                        diff = date_plus_subscription_duration - datetime.now()
-                        diff_days = int(str(diff.days))
-                        date_plus_diff = date + timedelta(days=diff_days)
-                        date_plus_diff_days = date_plus_diff.strftime("%d.%m.%Y")
+                        date_plus_diff_days = date_plus_subscription_duration.strftime("%d.%m.%Y")
+                    elif trial_date is not None:
+                        date = datetime.strptime(trial_date, "%d.%m.%Y")
+                        date_plus_trial_period = date + timedelta(days=int(trial_period))
+                        date_plus_diff_days = date_plus_trial_period.strftime("%d.%m.%Y")
                     else:
                         date_plus_diff_days = datetime.now().strftime("%d.%m.%Y")
 
-                    if orders.storage[str(user_id)]['channel'] == 'all':
+                    if message.successful_payment.invoice_payload == 'all':
                         buttons = []
                         for name, data in config['channels']['paid'].items():
                             channel_id = data['id']
@@ -113,11 +109,20 @@ async def check(bot: Bot):
 
                         keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
-                        await bot.send_message(chat_id=user_id, text=f'Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
+                        await message.answer(f'Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
                                             , reply_markup=keyboard)
+                        
                     else:
+                        channel_name = ''
+
+                        for name, data in config['channels']['paid'].items():
+                                id = data['id']
+                                if id == str(channel_id):
+                                    channel_name = name
 
                         buttons = []
+
+                        sub_period = config['payment']['subscription_duration']
 
                         await ai.unban_chat_member(channel_id=channel_id, user_id=user_id)
 
@@ -129,7 +134,7 @@ async def check(bot: Bot):
                             [types.InlineKeyboardButton(text=channel_name, url=link)]
                         ])
 
-                        await bot.send_message(chat_id=user_id, text=f'Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
+                        await message.answer(f'Payment for the {channel_name} was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
                                             , reply_markup=keyboard)
 
         except Exception as e:
