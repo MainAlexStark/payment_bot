@@ -95,7 +95,7 @@ async def check(bot: Bot):
                     else:
                         date_plus_diff_days = datetime.now().strftime("%d.%m.%Y")
 
-                    if message.successful_payment.invoice_payload == 'all':
+                    if channel_id == 'all':
                         buttons = []
                         for name, data in config['channels']['paid'].items():
                             channel_id = data['id']
@@ -109,7 +109,7 @@ async def check(bot: Bot):
 
                         keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
-                        await message.answer(f'Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
+                        await bot.send_message(chat_id=user_id,text=f'Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
                                             , reply_markup=keyboard)
                         
                     else:
@@ -134,7 +134,7 @@ async def check(bot: Bot):
                             [types.InlineKeyboardButton(text=channel_name, url=link)]
                         ])
 
-                        await message.answer(f'Payment for the {channel_name} was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
+                        await bot.send_message(chat_id=user_id ,text=f'Payment for the {channel_name} was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
                                             , reply_markup=keyboard)
 
         except Exception as e:

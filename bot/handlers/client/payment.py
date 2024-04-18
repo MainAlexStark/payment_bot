@@ -141,7 +141,7 @@ async def successful_payment(message: types.Message) -> None:
             [types.InlineKeyboardButton(text=channel_name, url=link)]
         ])
 
-        await message.answer(f'Payment for the all channel was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
+        await message.answer(f'Payment for the {channel_name} was successful!\nYour subscription will be valid for {config["payment"]["subscription_duration"]} days'
                             , reply_markup=keyboard)
         
 
