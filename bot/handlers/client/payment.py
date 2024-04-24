@@ -173,7 +173,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
         channel_name = callback.data.split('=')[1]
 
         keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
-            [types.InlineKeyboardButton(text=f"Pay with card using Stripe", callback_data=f"stripe={channel_name}")],
+            #[types.InlineKeyboardButton(text=f"Pay with card using Stripe", callback_data=f"stripe={channel_name}")],
             [types.InlineKeyboardButton(text=f"Pay with card or crypto using TON Pay", callback_data=f"ton={channel_name}")],
         ])
 

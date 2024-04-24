@@ -272,6 +272,14 @@ async def cmd_start(message: types.Message, command: CommandObject):
             await message.answer(string)
 
 
+@router.message(Command("help"))
+async def cmd_my_subscriptions(message: types.Message):
+    config = config_client.get()
+    # Private chat check 
+    if message.chat.type == "private":
+        await message.answer(text="If you have any payment issues, please contact energeiacharta@gmail.com. Please allow some time to respond. If the payment went through but you are unable to subscribe, do not worry; we will do it manually.")
+
+
 # @router.message(Command("our_products"))
 # async def cmd_our_products(message: types.Message):
 #     config = config_client.get()
