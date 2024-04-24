@@ -43,10 +43,10 @@ async def get_channels_keyboard(bot: Bot, user_id: int, sub: bool) -> types.Inli
     ai = AiogramInterface(bot)
     buttons = []
 
-    for name, data in config['channels']['free'].items():
-        url = data['url']
+    # for name, data in config['channels']['free'].items():
+    #     url = data['url']
 
-        buttons.append([types.InlineKeyboardButton(text=f'Free channel / {name}', url=url)])    
+    #     buttons.append([types.InlineKeyboardButton(text=f'Free channel / {name}', url=url)])    
 
     for name, data in config['channels']['paid'].items():
         id = data['id']
