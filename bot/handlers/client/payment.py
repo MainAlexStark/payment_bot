@@ -269,7 +269,7 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
             if name == channel_name: channel_id = data['id']
 
         if str(user_id) in orders.storage.keys():
-                await callback.bot.send_message(chat_id=user_id, text=f"You already have payment link")
+                await callback.bot.send_message(chat_id=user_id, text=f"You already have a payment link. If you changed your mind, please allow three minutes for the link to expire.")
         else:
             def generate_key():
                 key = ''
@@ -322,9 +322,9 @@ async def general_start(callback: CallbackQuery, state: FSMContext):
                 await callback.bot.send_message(chat_id=user_id, text=f"Your payment link: {order_link}. It will be valid for 5 minutes")
 
                 if channel_name == 'all':
-                    orders.add_element(str(user_id), str(order_id), 'all', 300)
+                    orders.add_element(str(user_id), str(order_id), 'all', 180)
                 if channel_name in config['channels']['paid'].keys():
-                    orders.add_element(str(user_id), str(order_id), channel_id, 300)
+                    orders.add_element(str(user_id), str(order_id), channel_id, 180)
 
             else:
                 await callback.bot.send_message(chat_id=user_id, text=f"Oops, there was a mistake. Try a different payment method, or try again later.")

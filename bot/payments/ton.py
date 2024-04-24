@@ -43,7 +43,7 @@ class TON():
             },
             'description': description,
             'externalId': externalId,  # ID счета на оплату в вашем боте
-            'timeoutSeconds': 300,  # время действия счета в секундах
+            'timeoutSeconds': 180,  # время действия счета в секундах
             'customerTelegramUserId': int(user_id),  # ID аккаунта Telegram покупателя
             'returnUrl': bot_url,  # после успешной оплаты направить покупателя в наш бот
             'failReturnUrl': 'https://t.me/wallet',  # при отсутствии оплаты оставить покупателя в @wallet
