@@ -309,7 +309,7 @@ async def cmd_referral_system(message: types.Message):
 
         if db.get_column(user_id=user_id, column='num_purchases') is not None:
 
-            link = 'https://t.me/Alex_Stark_bot?start=refid_'
+            link = 'https://t.me/encharta_bot?start=refid_'
 
             user_id = message.from_user.id
             user_num_referals = 0
