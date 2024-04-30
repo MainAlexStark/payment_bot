@@ -114,6 +114,7 @@ async def check(bot: Bot):
                                 date_plus_diff_days = datetime.now().strftime("%d.%m.%Y")
 
                             db.change_data(user_id=user_id, column=name.replace(' ','_'), new_value=date_plus_diff_days)
+                            db.change_data(user_id=user_id, column='start_date', new_value=None)
 
                             link = await ai.create_chat_invite_link(channel_id)
 
@@ -141,6 +142,7 @@ async def check(bot: Bot):
                         print(f"sub_date={sub_date}")
 
                         db.change_data(user_id=user_id, column=channel_name.replace(' ','_'), new_value=date_plus_diff_days)
+                        db.change_data(user_id=user_id, column='start_date', new_value=None)
 
                         keyboard = types.InlineKeyboardMarkup(inline_keyboard=[
                             [types.InlineKeyboardButton(text=channel_name, url=link)]

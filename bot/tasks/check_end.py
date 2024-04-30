@@ -31,6 +31,23 @@ if os.path.exists(file_path):
 else:
     raise Exception(f'File {file_path} not found')
 
+async def get_sub_channels(user_id, bot) -> dict:
+    ai = AiogramInterface(bot)
+    config = config_client.get()
+
+    channels = {}
+
+    for channel_name, data in config['channels']['paid'].items():
+        id = data['id']
+        user_channel_status = await ai.get_chat_member(channel_id=id, user_id=user_id)
+
+        channel_date = db.get_column(user_id=user_id, column=channel_name.replace(' ','_'))
+
+        if channel_date is not None: channels[channel_name] = channel_date
+
+    return channels
+
+
 async def check(bot: Bot) -> None:
     ai = AiogramInterface(bot)
     config = config_client.get()
@@ -39,7 +56,10 @@ async def check(bot: Bot) -> None:
         
         free_trial = db.get_column(user_id=user_id, column='start_date')
 
+        sub_channels: dict = await get_sub_channels(user_id=user_id, bot=bot)
+
         if free_trial is not None:
+            print('Check free trial')
             message = f'We value our relationship and would like to inform you that your subscription will end in {config["payment"]["days_notice"]} days'
             message_end = f'We are sorry to have you go. If you decide to get back we will be happy to see you again'
 
@@ -59,12 +79,13 @@ async def check(bot: Bot) -> None:
                     id = data['id']
                     if db.get_column(user_id=user_id, column=channel_name.replace(' ','_')) is None:
                         res = await ai.ban_chat_member(channel_id=id, user_id=user_id)
-                        if not res: ai.msg_to_admins(f"Error ban member: {user_id}")
+                        if not res: await ai.msg_to_admins(f"Error ban member: {user_id}")
                 await bot.send_message(user_id, text=message_end, reply_markup=keyboard)
-        else:
+
+        if sub_channels:
             keyboard = await get_all_paid_keyboard(bot=bot, user_id=user_id)
-            channels_nof = 'To channels:'
-            channels_ban = 'To channels:'
+            channels_nof = {}
+            channels_ban = {}
             for channel_name, data in config['channels']['paid'].items():
                     id = data['id']
                     user_channel_status = await ai.get_chat_member(channel_id=id, user_id=user_id)
@@ -80,14 +101,12 @@ async def check(bot: Bot) -> None:
                         today = datetime.today()
 
                         if date_plus_sub.date() - timedelta(days=int(config['payment']['days_notice'])) == today.date():
-                            await bot.send_message(user_id, text=message, reply_markup=keyboard)
+                            channels_nof[channel_name] = id
+                            
 
                         if date_plus_sub.date() <= today.date():
-                            print(f'ban user. End subcr. date={date_plus_sub.date()}')
-                            if await ai.ban_chat_member(channel_id=id, user_id=user_id): 
-                                db.change_data(user_id=user_id, column=channel_name.replace(' ','_'), new_value=None)
-                                await bot.send_message(user_id, text=message_end, reply_markup=keyboard)
-                            else: ai.msg_to_admins(f"Error ban member: {user_id}")
+                            channels_ban[channel_name] = id
+                            
 
                         if free_trial is None and channels_date is None and user_channel_status != 'left' and user_channel_status != 'kicked':
                             try:
@@ -95,3 +114,20 @@ async def check(bot: Bot) -> None:
                                 await ai.ban_chat_member(channel_id=id, user_id=user_id)
                             except Exception as e:
                                 print(f'Не удалось заблокировать пользователя {user_id}\tError={e}')
+            
+            to_channels = '\nTo channels:'
+            if channels_nof:
+                for name, id in channels_nof.items():
+                    to_channels += f"\n{name}"
+
+                await bot.send_message(user_id, text=message+to_channels, reply_markup=keyboard)
+
+            if channels_ban:
+                for name, id in channels_ban.items():
+                    to_channels += f"\n{name}"
+                    print(f'ban user. End subcr. date={date_plus_sub.date()}')
+                    if await ai.ban_chat_member(channel_id=id, user_id=user_id): 
+                        db.change_data(user_id=user_id, column=channel_name.replace(' ','_'), new_value=None)
+                    else: await ai.msg_to_admins(f"Error ban member: {user_id}")
+
+                await bot.send_message(user_id, text=message_end+to_channels, reply_markup=keyboard)
