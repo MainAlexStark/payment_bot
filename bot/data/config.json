@@ -4,10 +4,10 @@
         "url": "https://t.me/encharta_bot"
     },
     "WalletPay": {
-        "TOKEN": "6poiu1j8u2y4LXNnsSYt6ut99lCHdh55VT9C"
+        "TOKEN": "sUKsbgvRP00nHSFDmj8syshxwRbyMzcm9rsi"
     },
     "Stripe": {
-        "TOKEN": "284685063:TEST:YjUxMTBhODE1Nzkz"
+        "TOKEN": "350862534:LIVE:N2JmNDFlODY2MmZm"
     },
     "channels": {
         "paid": {
@@ -25,9 +25,6 @@
             }
         },
         "free": {
-            "Free channel 1": {
-                "url": "https://t.me/free_test_channel"
-            }
         }
     },
     "payment": {
