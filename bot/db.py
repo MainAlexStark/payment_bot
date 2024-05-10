@@ -69,15 +69,31 @@ class DataBaseInterface():
             return False
             print(f"Error create table. Error: {e}")
 
-    def print(self) -> None:
+    def print(self):
+
         columns = self._db.get(f"PRAGMA table_info({self._table_name})")
         for column in columns:
             print(column[1])
         print(columns)
 
         rows = self._db.get(f"SELECT * FROM {self._table_name}")
+        
         for row in rows:
             print(row)
+    
+    def get(self):
+        res = ''
+
+        columns = self._db.get(f"PRAGMA table_info({self._table_name})")
+        for column in columns:
+            res += f'{column}\n'
+
+        rows = self._db.get(f"SELECT * FROM {self._table_name}")
+        
+        for row in rows:
+            res += f'{row}\n'
+
+        return res
 
     """ USER """
     def is_user(self, user_id: int | str) -> bool:
@@ -193,8 +209,9 @@ class Config():
 file_path = 'data/Database.db'
 if os.path.exists(file_path):
     db = DataBaseInterface(file_path, "users")
-    #print(db.change_data(user_id='684124197', column='Crude_Oil_Charta', new_value='15.03.2024'))
+    print(db.change_data(user_id='684124197', column='Crude_Oil_Charta', new_value="13.04.2024"))
     #print(db.del_user(684124197))
+    # print(db.del_user(1849088118))
     db.create()
     db.print()
     shutil.copyfile('data/Database.db', 'data/database_copy.db')

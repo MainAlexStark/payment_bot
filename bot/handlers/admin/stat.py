@@ -40,3 +40,16 @@ async def cmd_start(message: types.Message):
             num_users = len(db.get_users())
 
             await message.reply(f"Statistic:\nnum_users={num_users}")
+
+@router.message(Command("get_db"))
+async def cmd_start(message: types.Message):
+    # Private chat check 
+    if message.chat.type == "private":
+        user_id = message.from_user.id
+        if user_id in config['admins']:
+            try:
+                print(db.print())
+                await message.answer(text=db.get())
+            except Exception as e:
+                await message.answer(text=f"Error: {e}")
+            

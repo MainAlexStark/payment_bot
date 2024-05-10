@@ -126,8 +126,8 @@ async def check(bot: Bot) -> None:
                 for name, id in channels_ban.items():
                     to_channels += f"\n{name}"
                     print(f'ban user. End subcr. date={date_plus_sub.date()}')
-                    if await ai.ban_chat_member(channel_id=id, user_id=user_id): 
-                        db.change_data(user_id=user_id, column=channel_name.replace(' ','_'), new_value=None)
-                    else: await ai.msg_to_admins(f"Error ban member: {user_id}")
+                    if not(await ai.ban_chat_member(channel_id=id, user_id=user_id)): 
+                        await ai.msg_to_admins(f"Error ban member: {user_id}")
+                    db.change_data(user_id=user_id, column=channel_name.replace(' ','_'), new_value=None)
 
                 await bot.send_message(user_id, text=message_end+to_channels, reply_markup=keyboard)
